@@ -11,7 +11,7 @@ import { ConfirmDialog } from './ConfirmDialog';
 interface RequirementBoardProps {
   requirement: RequirementWithTasks;
   onTaskStatusChange: (taskId: string, newStatus: TaskStatus) => void;
-  onAddTask: (requirementId: string, title: string) => void;
+  onAddTask: (requirementId: string, title: string, assignedTo?: string) => void;
   onDeleteTask?: (taskId: string) => void;
   onUpdateTask?: (taskId: string, updates: Partial<Subtask>) => void;
   onDeleteRequirement?: (requirementId: string) => void;
@@ -32,6 +32,7 @@ export function RequirementBoard({
   const [isExpanded, setIsExpanded] = useState(true);
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [newTaskAssignee, setNewTaskAssignee] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(requirement.title);
   const [editDescription, setEditDescription] = useState(requirement.description);
@@ -61,8 +62,9 @@ export function RequirementBoard({
 
   const handleAddTask = () => {
     if (newTaskTitle.trim()) {
-      onAddTask(requirement.id, newTaskTitle.trim());
+      onAddTask(requirement.id, newTaskTitle.trim(), newTaskAssignee.trim() || undefined);
       setNewTaskTitle('');
+      setNewTaskAssignee('');
       setIsAddingTask(false);
     }
   };
@@ -224,21 +226,48 @@ export function RequirementBoard({
                 {/* Add Task */}
                 <div className="mb-4">
                   {isAddingTask ? (
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        value={newTaskTitle}
-                        onChange={(e) => setNewTaskTitle(e.target.value)}
-                        placeholder="Enter task title..."
-                        className="flex-1 bg-muted/50 border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                        autoFocus
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') handleAddTask();
-                          if (e.key === 'Escape') setIsAddingTask(false);
-                        }}
-                      />
-                      <Button size="sm" onClick={handleAddTask}>Add</Button>
-                      <Button size="sm" variant="ghost" onClick={() => setIsAddingTask(false)}>Cancel</Button>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={newTaskTitle}
+                          onChange={(e) => setNewTaskTitle(e.target.value)}
+                          placeholder="Task title..."
+                          className="flex-1 bg-muted/50 border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && newTaskTitle.trim()) handleAddTask();
+                            if (e.key === 'Escape') {
+                              setIsAddingTask(false);
+                              setNewTaskTitle('');
+                              setNewTaskAssignee('');
+                            }
+                          }}
+                        />
+                        <input
+                          type="text"
+                          value={newTaskAssignee}
+                          onChange={(e) => setNewTaskAssignee(e.target.value)}
+                          placeholder="Assignee (optional)"
+                          className="w-40 bg-muted/50 border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && newTaskTitle.trim()) handleAddTask();
+                            if (e.key === 'Escape') {
+                              setIsAddingTask(false);
+                              setNewTaskTitle('');
+                              setNewTaskAssignee('');
+                            }
+                          }}
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={handleAddTask} disabled={!newTaskTitle.trim()}>Add Task</Button>
+                        <Button size="sm" variant="ghost" onClick={() => {
+                          setIsAddingTask(false);
+                          setNewTaskTitle('');
+                          setNewTaskAssignee('');
+                        }}>Cancel</Button>
+                      </div>
                     </div>
                   ) : (
                     <Button

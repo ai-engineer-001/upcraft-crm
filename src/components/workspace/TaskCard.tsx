@@ -15,17 +15,22 @@ interface TaskCardProps {
 export function TaskCard({ task, isDragging, isAdditionalScope, onDelete, onUpdate }: TaskCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(task.title);
+  const [editAssignee, setEditAssignee] = useState(task.assigned_to || '');
   const [showActions, setShowActions] = useState(false);
 
   const handleSaveEdit = () => {
     if (editTitle.trim() && onUpdate) {
-      onUpdate(task.id, { title: editTitle.trim() });
+      onUpdate(task.id, { 
+        title: editTitle.trim(),
+        assigned_to: editAssignee.trim() || undefined
+      });
     }
     setIsEditing(false);
   };
 
   const handleCancelEdit = () => {
     setEditTitle(task.title);
+    setEditAssignee(task.assigned_to || '');
     setIsEditing(false);
   };
 
@@ -36,8 +41,20 @@ export function TaskCard({ task, isDragging, isAdditionalScope, onDelete, onUpda
           type="text"
           value={editTitle}
           onChange={(e) => setEditTitle(e.target.value)}
+          placeholder="Task title"
           className="w-full bg-muted/50 border border-border rounded px-2 py-1 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
           autoFocus
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') handleSaveEdit();
+            if (e.key === 'Escape') handleCancelEdit();
+          }}
+        />
+        <input
+          type="text"
+          value={editAssignee}
+          onChange={(e) => setEditAssignee(e.target.value)}
+          placeholder="Assignee (optional)"
+          className="w-full bg-muted/50 border border-border rounded px-2 py-1 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
           onKeyDown={(e) => {
             if (e.key === 'Enter') handleSaveEdit();
             if (e.key === 'Escape') handleCancelEdit();
