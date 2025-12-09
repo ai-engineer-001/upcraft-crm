@@ -25,7 +25,7 @@ This document provides a comprehensive step-by-step guide for migrating this Vit
 
 ```
 project-root/
-├── index.html                    # Entry HTML (will be replaced by Next.js layout)
+├── index.html                    # Entry HTML (replaced by Next.js layout)
 ├── vite.config.ts               # Vite config (not needed in Next.js)
 ├── tailwind.config.ts           # Keep and adapt
 ├── eslint.config.js             # Keep
@@ -70,6 +70,8 @@ project-root/
 │   │   │   ├── navigation-menu.tsx
 │   │   │   ├── pagination.tsx
 │   │   │   ├── popover.tsx
+│   │   │   ├── priority-badge.tsx    # NEW: Priority indicator badge
+│   │   │   ├── priority-select.tsx   # NEW: Priority dropdown selector
 │   │   │   ├── progress.tsx
 │   │   │   ├── radio-group.tsx
 │   │   │   ├── resizable.tsx
@@ -93,25 +95,25 @@ project-root/
 │   │   │   └── use-toast.ts
 │   │   │
 │   │   ├── dashboard/          # Dashboard components (client)
-│   │   │   ├── ClientCard.tsx       # Displays client info with progress
-│   │   │   └── Dashboard.tsx        # Main dashboard grid view
+│   │   │   ├── ClientCard.tsx       # Client info with progress & priority
+│   │   │   └── Dashboard.tsx        # Main dashboard with active/completed sections
 │   │   │
 │   │   └── workspace/          # Workspace components (client)
-│   │       ├── AddScopeDialog.tsx    # Dialog to add new scope/requirement
+│   │       ├── AddScopeDialog.tsx    # Dialog to add scope with priority
 │   │       ├── ClientWorkspace.tsx   # Main client workspace view
 │   │       ├── ConfirmDialog.tsx     # Reusable confirmation dialog
 │   │       ├── DocumentManager.tsx   # Document upload and management
 │   │       ├── KanbanColumn.tsx      # Kanban column for drag-drop
-│   │       ├── RequirementBoard.tsx  # Requirement with tasks board
-│   │       └── TaskCard.tsx          # Individual task card
+│   │       ├── RequirementBoard.tsx  # Requirement with tasks & priority
+│   │       └── TaskCard.tsx          # Task card with priority support
 │   │
 │   ├── data/
-│   │   └── mockData.ts         # Mock data for development
+│   │   └── mockData.ts         # Mock data with priority fields
 │   │
 │   ├── hooks/
 │   │   ├── use-mobile.tsx      # Mobile detection hook
 │   │   ├── use-toast.ts        # Toast notification hook
-│   │   └── useProjectData.ts   # Main data management hook
+│   │   └── useProjectData.ts   # Main data management with priority sorting
 │   │
 │   ├── lib/
 │   │   └── utils.ts            # Utility functions (cn, etc.)
@@ -121,7 +123,7 @@ project-root/
 │   │   └── NotFound.tsx        # 404 page → app/not-found.tsx
 │   │
 │   └── types/
-│       └── project.ts          # TypeScript type definitions
+│       └── project.ts          # TypeScript types with Priority
 ```
 
 ---
@@ -151,8 +153,10 @@ nextjs-project/
 │   │   │   ├── theme-provider.tsx
 │   │   │   └── query-provider.tsx
 │   │   │
-│   │   ├── ui/                 # Shadcn components (unchanged)
-│   │   │   └── ... (all ui components)
+│   │   ├── ui/                 # Shadcn + custom components
+│   │   │   ├── priority-badge.tsx   # Priority indicator
+│   │   │   ├── priority-select.tsx  # Priority dropdown
+│   │   │   └── ... (all other ui components)
 │   │   │
 │   │   ├── dashboard/          # Dashboard components
 │   │   │   ├── ClientCard.tsx
@@ -186,182 +190,41 @@ nextjs-project/
 
 ## Component Details for AI Migration
 
-### Core Components
+### Type Definitions (`src/types/project.ts`)
 
-#### 1. `src/pages/Index.tsx` → `src/app/page.tsx`
-**Purpose**: Main application page with state management
-**Dependencies**: 
-- `useProjectData` hook for data operations
-- `Dashboard` and `ClientWorkspace` components
-- `framer-motion` for animations
-- `sonner` for toast notifications
-**Client Component**: Yes (`"use client"` required)
-**Key State**:
-- `selectedClientId`: Currently selected client
-**Key Functions**:
-- `handleTaskStatusChange(taskId, newStatus)`
-- `handleAddTask(requirementId, title, assignedTo?)`
-- `handleDeleteTask(taskId)`
-- `handleUpdateTask(taskId, updates)`
-- `handleAddRequirement(projectId, title, description, isAdditionalScope)`
-- `handleDeleteRequirement(requirementId)`
-- `handleUpdateRequirement(requirementId, updates)`
-- `handleAddDocument(clientId, name, type, fileUrl)`
-- `handleDeleteDocument(docId)`
-
-#### 2. `src/components/dashboard/Dashboard.tsx`
-**Purpose**: Main dashboard showing all clients in a grid
-**Props**:
-- `clients: ClientWithProject[]`
-- `onClientSelect: (clientId: string) => void`
-**Features**:
-- Stats overview (total clients, projects, completion rate)
-- Client cards grid with progress indicators
-**Animations**: Framer Motion fade-in for cards
-
-#### 3. `src/components/dashboard/ClientCard.tsx`
-**Purpose**: Individual client card displaying summary info
-**Props**:
-- `client: ClientWithProject`
-- `onClick: () => void`
-**Features**:
-- Agreement status indicator (Pending/Signed)
-- Project progress bar
-- Task count summary
-**Animations**: Scale on hover
-
-#### 4. `src/components/workspace/ClientWorkspace.tsx`
-**Purpose**: Full workspace view for a selected client
-**Props**:
-- `client: ClientWithProject`
-- `onBack: () => void`
-- `onTaskStatusChange`, `onAddTask`, `onDeleteTask`, `onUpdateTask`
-- `onAddRequirement`, `onDeleteRequirement`, `onUpdateRequirement`
-- `onAddDocument`, `onDeleteDocument`
-**Features**:
-- Agreement pending warning banner
-- Project progress overview
-- All requirements displayed together (no separation)
-- Document manager dialog
-- Add scope dialog
-
-#### 5. `src/components/workspace/RequirementBoard.tsx`
-**Purpose**: Kanban board for a single requirement with tasks
-**Props**:
-- `requirement: RequirementWithTasks`
-- Task handlers (status change, add, delete, update)
-- Requirement handlers (delete, update)
-**Features**:
-- Collapsible requirement header with progress
-- Add task with title and assignee fields
-- Drag-and-drop between status columns
-- Edit/delete requirement with confirmation
-**State**:
-- `isExpanded`, `isAddingTask`, `newTaskTitle`, `newTaskAssignee`
-- `isEditing`, `editTitle`, `editDescription`
-- Dialog states for confirmations
-
-#### 6. `src/components/workspace/KanbanColumn.tsx`
-**Purpose**: Single Kanban column with droppable area
-**Props**:
-- `status: TaskStatus`
-- `tasks: Subtask[]`
-- `requirementTitle: string`
-- `isAdditionalScope: boolean`
-- `onDeleteTask`, `onUpdateTask`
-**Features**:
-- Droppable zone for drag-and-drop
-- Task count indicator
-- Status-based coloring
-
-#### 7. `src/components/workspace/TaskCard.tsx`
-**Purpose**: Draggable task card with edit capabilities
-**Props**:
-- `task: Subtask`
-- `isDragging: boolean`
-- `isAdditionalScope: boolean`
-- `onDelete`, `onUpdate`
-**Features**:
-- Inline editing for title AND assignee
-- Drag handle visibility on hover
-- Additional scope visual indicator
-- Delete/edit action buttons
-
-#### 8. `src/components/workspace/AddScopeDialog.tsx`
-**Purpose**: Dialog to add new scope/requirement
-**Props**:
-- `open`, `onOpenChange`, `onAdd(title, description, isAdditionalScope)`
-**Features**:
-- Title and description inputs
-- Toggle for additional scope (scope creep tracking)
-
-#### 9. `src/components/workspace/DocumentManager.tsx`
-**Purpose**: Modal for managing client documents
-**Props**:
-- `open`, `onOpenChange`, `clientId`, `clientName`
-- `documents: Document[]`
-- `onAddDocument`, `onDeleteDocument`
-**Features**:
-- Separate sections for agreements vs other documents
-- Upload simulation (file input)
-- Document type selection
-- Delete confirmation
-
-#### 10. `src/components/workspace/ConfirmDialog.tsx`
-**Purpose**: Reusable confirmation dialog
-**Props**:
-- `open`, `onOpenChange`, `title`, `description`, `onConfirm`
-**Features**: Standard alert dialog pattern
-
----
-
-## Hooks
-
-### `src/hooks/useProjectData.ts`
-**Purpose**: Central data management for all entities
-**Returns**:
 ```typescript
-{
-  clientsWithProjects: ClientWithProject[],
-  getClientById: (id: string) => ClientWithProject | undefined,
-  updateTaskStatus: (taskId: string, status: TaskStatus) => void,
-  addSubtask: (reqId: string, title: string, assignedTo?: string) => Subtask,
-  deleteSubtask: (taskId: string) => void,
-  updateSubtask: (taskId: string, updates: Partial<Subtask>) => void,
-  addRequirement: (projectId: string, title: string, desc: string, isAdditional: boolean) => Requirement,
-  deleteRequirement: (reqId: string) => void,
-  updateRequirement: (reqId: string, updates: { title: string; description: string }) => void,
-  addDocument: (clientId: string, name: string, type: Document['type'], fileUrl: string) => Document,
-  deleteDocument: (docId: string) => void,
-  getClientDocuments: (clientId: string) => Document[],
-  hasAgreementDocument: (clientId: string) => boolean,
-}
-```
-
----
-
-## Type Definitions
-
-### `src/types/project.ts`
-```typescript
+export type ClientStatus = 'Active' | 'Completed' | 'Archived';
+export type AgreementStatus = 'Pending' | 'Signed';
+export type ProjectStatus = 'Planning' | 'In Progress' | 'Completed';
 export type TaskStatus = 'To Do' | 'In Progress' | 'Review' | 'Done';
+export type Priority = 'Low' | 'Medium' | 'High' | 'Urgent';
+
+export const PRIORITY_ORDER: Record<Priority, number> = {
+  'Urgent': 0,
+  'High': 1,
+  'Medium': 2,
+  'Low': 3,
+};
 
 export interface Client {
   id: string;
   name: string;
   email: string;
-  status: 'Active' | 'Archived';
-  agreement_status: 'Pending' | 'Signed';
+  status: ClientStatus;
+  agreement_status: AgreementStatus;
   agreement_url?: string;
+  created_at: string;
 }
 
 export interface Project {
   id: string;
   client_id: string;
   name: string;
-  status: 'Planning' | 'In Progress' | 'Completed';
+  status: ProjectStatus;
+  priority: Priority;
   start_date: string;
   deadline: string;
+  created_at: string;
 }
 
 export interface Requirement {
@@ -370,6 +233,7 @@ export interface Requirement {
   title: string;
   description: string;
   is_additional_scope: boolean;
+  priority: Priority;
   created_at: string;
 }
 
@@ -378,6 +242,7 @@ export interface Subtask {
   requirement_id: string;
   title: string;
   status: TaskStatus;
+  priority: Priority;
   assigned_to?: string;
   created_at: string;
 }
@@ -386,7 +251,7 @@ export interface Document {
   id: string;
   client_id: string;
   name: string;
-  type: 'agreement' | 'proposal' | 'invoice' | 'other';
+  type: 'agreement' | 'contract' | 'proposal' | 'other';
   file_url: string;
   uploaded_at: string;
 }
@@ -403,9 +268,229 @@ export interface ProjectWithProgress extends Project {
 
 export interface ClientWithProject extends Client {
   projects: ProjectWithProgress[];
-  documents?: Document[];
+  documents: Document[];
 }
 ```
+
+---
+
+### Core Components
+
+#### 1. `src/pages/Index.tsx` → `src/app/page.tsx`
+**Purpose**: Main application page with state management
+**Client Component**: Yes (`"use client"` required)
+**Dependencies**: 
+- `useProjectData` hook for data operations
+- `Dashboard` and `ClientWorkspace` components
+- `framer-motion` for animations
+- `sonner` for toast notifications
+
+**Key State**:
+- `selectedClientId`: Currently selected client
+
+**Key Handlers**:
+```typescript
+handleTaskStatusChange(taskId: string, newStatus: TaskStatus)
+handleAddTask(requirementId: string, title: string, assignedTo?: string, priority?: Priority)
+handleDeleteTask(taskId: string)
+handleUpdateTask(taskId: string, updates: Partial<Subtask>)
+handleAddRequirement(projectId: string, title: string, description: string, isAdditionalScope: boolean, priority?: Priority)
+handleDeleteRequirement(requirementId: string)
+handleUpdateRequirement(requirementId: string, updates: Partial<Requirement>)
+handleAddDocument(clientId: string, name: string, type: Document['type'], fileUrl: string)
+handleDeleteDocument(docId: string)
+```
+
+---
+
+#### 2. `src/components/dashboard/Dashboard.tsx`
+**Purpose**: Main dashboard showing active and completed clients
+**Props**:
+```typescript
+interface DashboardProps {
+  clients: ClientWithProject[];
+  completedClients: ClientWithProject[];
+  onClientClick: (clientId: string) => void;
+}
+```
+**Features**:
+- Stats overview (total clients, projects, completion rate)
+- Active clients grid with priority indicators
+- Collapsible completed clients section for future work
+- Client cards sorted by project priority
+
+---
+
+#### 3. `src/components/dashboard/ClientCard.tsx`
+**Purpose**: Individual client card displaying summary info
+**Props**:
+```typescript
+interface ClientCardProps {
+  client: ClientWithProject;
+  onClick: () => void;
+  index: number;
+  isCompleted?: boolean;
+}
+```
+**Features**:
+- Agreement status indicator (Pending/Signed)
+- Project progress bar with priority badge
+- Task count summary
+- Visual distinction for completed clients
+
+---
+
+#### 4. `src/components/workspace/ClientWorkspace.tsx`
+**Purpose**: Full workspace view for a selected client
+**Props**:
+```typescript
+interface ClientWorkspaceProps {
+  client: ClientWithProject;
+  onBack: () => void;
+  onTaskStatusChange: (taskId: string, newStatus: TaskStatus) => void;
+  onAddTask: (requirementId: string, title: string, assignedTo?: string, priority?: Priority) => void;
+  onDeleteTask?: (taskId: string) => void;
+  onUpdateTask?: (taskId: string, updates: Partial<Subtask>) => void;
+  onAddRequirement?: (projectId: string, title: string, description: string, isAdditionalScope: boolean, priority?: Priority) => void;
+  onDeleteRequirement?: (requirementId: string) => void;
+  onUpdateRequirement?: (requirementId: string, updates: Partial<Requirement>) => void;
+  onAddDocument?: (clientId: string, name: string, type: Document['type'], fileUrl: string) => void;
+  onDeleteDocument?: (docId: string) => void;
+}
+```
+**Features**:
+- Agreement pending warning banner
+- Project progress overview
+- All requirements displayed together (unified view)
+- Document manager dialog
+- Add scope dialog with priority selection
+
+---
+
+#### 5. `src/components/workspace/RequirementBoard.tsx`
+**Purpose**: Kanban board for a single requirement with tasks
+**Props**:
+```typescript
+interface RequirementBoardProps {
+  requirement: RequirementWithTasks;
+  onTaskStatusChange: (taskId: string, newStatus: TaskStatus) => void;
+  onAddTask: (requirementId: string, title: string, assignedTo?: string, priority?: Priority) => void;
+  onDeleteTask?: (taskId: string) => void;
+  onUpdateTask?: (taskId: string, updates: Partial<Subtask>) => void;
+  onDeleteRequirement?: (requirementId: string) => void;
+  onUpdateRequirement?: (requirementId: string, updates: Partial<Requirement>) => void;
+}
+```
+**Features**:
+- Collapsible requirement header with priority badge
+- Inline priority selector for requirement
+- Add task form with title, assignee, and priority fields
+- Drag-and-drop between status columns
+- Edit/delete requirement with confirmation
+- Tasks sorted by priority within each column
+
+---
+
+#### 6. `src/components/workspace/TaskCard.tsx`
+**Purpose**: Draggable task card with edit capabilities
+**Props**:
+```typescript
+interface TaskCardProps {
+  task: Subtask;
+  isDragging: boolean;
+  isAdditionalScope: boolean;
+  onDelete?: (taskId: string) => void;
+  onUpdate?: (taskId: string, updates: Partial<Subtask>) => void;
+}
+```
+**Features**:
+- Priority badge display
+- Inline editing for title, assignee, AND priority
+- Quick priority change via dropdown
+- Drag handle visibility on hover
+- Delete/edit action buttons
+
+---
+
+#### 7. `src/components/workspace/AddScopeDialog.tsx`
+**Purpose**: Dialog to add new scope/requirement
+**Props**:
+```typescript
+interface AddScopeDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onAdd: (title: string, description: string, isAdditionalScope: boolean, priority: Priority) => void;
+}
+```
+**Features**:
+- Title and description inputs
+- Priority selector (Urgent/High/Medium/Low)
+- Toggle for additional scope (scope creep tracking)
+
+---
+
+#### 8. `src/components/ui/priority-badge.tsx`
+**Purpose**: Visual priority indicator badge
+**Props**:
+```typescript
+interface PriorityBadgeProps {
+  priority: Priority;
+  showLabel?: boolean;
+  size?: 'sm' | 'md';
+  className?: string;
+}
+```
+**Color Scheme**:
+- Urgent: Red
+- High: Orange
+- Medium: Yellow
+- Low: Blue
+
+---
+
+#### 9. `src/components/ui/priority-select.tsx`
+**Purpose**: Dropdown for selecting priority
+**Props**:
+```typescript
+interface PrioritySelectProps {
+  value: Priority;
+  onChange: (priority: Priority) => void;
+  size?: 'sm' | 'md';
+}
+```
+
+---
+
+### Hooks
+
+#### `src/hooks/useProjectData.ts`
+**Purpose**: Central data management for all entities with priority sorting
+**Returns**:
+```typescript
+{
+  clientsWithProjects: ClientWithProject[];      // Active clients
+  completedClients: ClientWithProject[];         // Completed clients
+  getClientById: (id: string) => ClientWithProject | undefined;
+  updateTaskStatus: (taskId: string, status: TaskStatus) => void;
+  updateTaskPriority: (taskId: string, priority: Priority) => void;
+  addSubtask: (reqId: string, title: string, assignedTo?: string, priority?: Priority) => Subtask;
+  deleteSubtask: (taskId: string) => void;
+  updateSubtask: (taskId: string, updates: Partial<Subtask>) => void;
+  addRequirement: (projectId: string, title: string, desc: string, isAdditional: boolean, priority?: Priority) => Requirement;
+  deleteRequirement: (reqId: string) => void;
+  updateRequirement: (reqId: string, updates: Partial<Requirement>) => void;
+  updateProjectPriority: (projectId: string, priority: Priority) => void;
+  updateClientStatus: (clientId: string, status: ClientStatus) => void;
+  addDocument: (clientId: string, name: string, type: Document['type'], fileUrl: string) => Document;
+  deleteDocument: (docId: string) => void;
+  getClientDocuments: (clientId: string) => Document[];
+  hasAgreementDocument: (clientId: string) => boolean;
+}
+```
+
+**Sorting Logic**:
+- All items automatically sorted by `PRIORITY_ORDER` (Urgent first, Low last)
+- Sorting applied to: projects, requirements, and subtasks
 
 ---
 
@@ -472,7 +557,7 @@ npm install next-themes
 
 ## Step 3: Configure Tailwind CSS
 
-Copy your `tailwind.config.ts` with these adjustments:
+Copy your `tailwind.config.ts` with these adjustments for content paths:
 
 ```typescript
 import type { Config } from "tailwindcss";
@@ -485,7 +570,7 @@ const config = {
     './app/**/*.{ts,tsx}',
     './src/**/*.{ts,tsx}',
   ],
-  // ... rest of your config
+  // ... rest of your existing config
 } satisfies Config;
 
 export default config;
@@ -495,7 +580,10 @@ export default config;
 
 ## Step 4: Migrate Design System
 
-Copy `src/index.css` content to `src/app/globals.css`.
+Copy `src/index.css` content to `src/app/globals.css`. Key custom classes:
+- `.glass-card` - Glassmorphism card style
+- `.progress-bar` / `.progress-bar-fill` - Progress bar styling
+- `.text-gradient` - Gradient text effect
 
 ---
 
@@ -517,7 +605,7 @@ Copy `src/index.css` content to `src/app/globals.css`.
 
 ## Step 6: Migrate Components
 
-Copy directories:
+Copy directories maintaining structure:
 ```bash
 cp -r vite-project/src/components/* nextjs-project/src/components/
 cp -r vite-project/src/hooks/* nextjs-project/src/hooks/
@@ -608,174 +696,22 @@ export default function RootLayout({
 ```tsx
 "use client";
 
-// Copy content from src/pages/Index.tsx
-// The component remains the same, just add "use client" at top
-import { useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
-import { Dashboard } from '@/components/dashboard/Dashboard';
-import { ClientWorkspace } from '@/components/workspace/ClientWorkspace';
-import { useProjectData } from '@/hooks/useProjectData';
-import { TaskStatus, Subtask, Document } from '@/types/project';
-import { Toaster } from '@/components/ui/sonner';
-import { toast } from 'sonner';
-
-const Index = () => {
-  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
-  const { 
-    clientsWithProjects, 
-    getClientById, 
-    updateTaskStatus, 
-    addSubtask,
-    deleteSubtask,
-    updateSubtask,
-    addRequirement,
-    deleteRequirement,
-    updateRequirement,
-    addDocument,
-    deleteDocument,
-  } = useProjectData();
-
-  const selectedClient = selectedClientId ? getClientById(selectedClientId) : null;
-
-  const handleTaskStatusChange = (taskId: string, newStatus: TaskStatus) => {
-    updateTaskStatus(taskId, newStatus);
-    
-    if (newStatus === 'Done') {
-      toast.success('Task completed!', {
-        description: 'Great progress on your project.',
-      });
-    }
-  };
-
-  const handleAddTask = (requirementId: string, title: string, assignedTo?: string) => {
-    addSubtask(requirementId, title, assignedTo);
-    toast.success('Task added', {
-      description: `"${title}" has been added to the backlog.`,
-    });
-  };
-
-  const handleDeleteTask = (taskId: string) => {
-    deleteSubtask(taskId);
-    toast.success('Task deleted');
-  };
-
-  const handleUpdateTask = (taskId: string, updates: Partial<Subtask>) => {
-    updateSubtask(taskId, updates);
-    toast.success('Task updated');
-  };
-
-  const handleAddRequirement = (projectId: string, title: string, description: string, isAdditionalScope: boolean) => {
-    addRequirement(projectId, title, description, isAdditionalScope);
-    toast.success('Scope added');
-  };
-
-  const handleDeleteRequirement = (requirementId: string) => {
-    deleteRequirement(requirementId);
-    toast.success('Scope deleted');
-  };
-
-  const handleUpdateRequirement = (requirementId: string, updates: { title: string; description: string }) => {
-    updateRequirement(requirementId, updates);
-    toast.success('Scope updated');
-  };
-
-  const handleAddDocument = (clientId: string, name: string, type: Document['type'], fileUrl: string) => {
-    addDocument(clientId, name, type, fileUrl);
-    toast.success('Document added');
-  };
-
-  const handleDeleteDocument = (docId: string) => {
-    deleteDocument(docId);
-    toast.success('Document deleted');
-  };
-
-  return (
-    <AnimatePresence mode="wait">
-      {selectedClient ? (
-        <motion.div
-          key={selectedClient.id}
-          initial={{ opacity: 0, x: 50 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -50 }}
-          transition={{ duration: 0.2 }}
-        >
-          <ClientWorkspace
-            client={selectedClient}
-            onBack={() => setSelectedClientId(null)}
-            onTaskStatusChange={handleTaskStatusChange}
-            onAddTask={handleAddTask}
-            onDeleteTask={handleDeleteTask}
-            onUpdateTask={handleUpdateTask}
-            onAddRequirement={handleAddRequirement}
-            onDeleteRequirement={handleDeleteRequirement}
-            onUpdateRequirement={handleUpdateRequirement}
-            onAddDocument={handleAddDocument}
-            onDeleteDocument={handleDeleteDocument}
-          />
-        </motion.div>
-      ) : (
-        <motion.div
-          key="dashboard"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
-        >
-          <Dashboard
-            clients={clientsWithProjects}
-            onClientSelect={(clientId) => setSelectedClientId(clientId)}
-          />
-          <Toaster />
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
-};
-
-export default Index;
-```
-
-### Create 404 Page
-
-**`src/app/not-found.tsx`:**
-```tsx
-// Copy content from src/pages/NotFound.tsx
-// Add "use client" if it uses hooks or interactivity
-"use client";
-
-import Link from 'next/link';
-
-export default function NotFound() {
-  return (
-    <div className="flex flex-col items-center justify-center h-screen bg-background">
-      <h2 className="text-3xl font-semibold text-foreground mb-4">404 - Page Not Found</h2>
-      <p className="text-muted-foreground mb-8">Could not find requested resource</p>
-      <Link href="/" className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/80 transition-colors">
-        Return Home
-      </Link>
-    </div>
-  );
-}
+// Copy entire content from src/pages/Index.tsx
+// Add "use client" at top
 ```
 
 ---
 
 ## Step 8: Handle Client Components
 
-Components that need `"use client"`:
+**All components requiring `"use client"`:**
 - All components using `useState`, `useEffect`, `useRef`
-- All components using event handlers (`onClick`, etc.)
-- All components using browser APIs
+- All components using event handlers
 - All Framer Motion components
 - All drag-and-drop components
 - All form components
 
-**Add to top of each file:**
-```tsx
-"use client";
-```
-
-### Components Requiring "use client":
+**Components List:**
 - `src/components/dashboard/Dashboard.tsx`
 - `src/components/dashboard/ClientCard.tsx`
 - `src/components/workspace/ClientWorkspace.tsx`
@@ -785,13 +721,15 @@ Components that need `"use client"`:
 - `src/components/workspace/AddScopeDialog.tsx`
 - `src/components/workspace/DocumentManager.tsx`
 - `src/components/workspace/ConfirmDialog.tsx`
-- All `src/components/ui/*` components
+- `src/components/ui/priority-badge.tsx`
+- `src/components/ui/priority-select.tsx`
+- All `src/components/ui/*` Shadcn components
 
 ---
 
 ## Step 9: Migrate Hooks and State
 
-Hooks work the same in Next.js client components:
+Hooks work identically in Next.js client components:
 - `useProjectData.ts` - No changes needed
 - `use-mobile.tsx` - No changes needed
 - `use-toast.ts` - No changes needed
@@ -801,13 +739,15 @@ Hooks work the same in Next.js client components:
 ## Step 10: Final Testing
 
 1. Run development server: `npm run dev`
-2. Test all routes
+2. Test all routes and navigation
 3. Verify drag-and-drop functionality
-4. Test all CRUD operations
-5. Check responsive design
-6. Verify animations work
-7. Test document upload flow
-8. Check toast notifications
+4. Test all CRUD operations (add/edit/delete)
+5. Test priority selection and sorting
+6. Check responsive design on multiple viewports
+7. Verify animations work correctly
+8. Test document upload flow
+9. Check toast notifications
+10. Test completed clients section expand/collapse
 
 ---
 
@@ -825,7 +765,7 @@ if (!mounted) return null;
 ```
 
 ### 3. DnD Library Issues
-**Solution**: @hello-pangea/dnd works with SSR. Add to layout:
+**Solution**: @hello-pangea/dnd works with SSR. Add to body:
 ```tsx
 <body suppressHydrationWarning>
 ```
@@ -856,9 +796,20 @@ Rename `.env` variables:
 ## Summary
 
 This migration maintains all existing functionality while leveraging Next.js features:
-- File-based routing
-- Built-in optimization
-- Server components (where applicable)
-- Improved SEO capabilities
+- File-based routing with App Router
+- Built-in optimization for images and fonts
+- Server components capability (where applicable)
+- Improved SEO with metadata API
+- Priority-based sorting throughout the app
+- Active and completed client management
 
-The core business logic in hooks and components remains unchanged. Only the entry points and routing structure need modification.
+The core business logic in hooks and components remains unchanged. Only entry points and routing structure need modification.
+
+**Key Features Preserved:**
+- Full CRUD for clients, projects, requirements, and tasks
+- Priority system (Urgent/High/Medium/Low) with auto-sorting
+- Drag-and-drop task management
+- Document management with agreement tracking
+- Completed clients section for future work
+- Real-time toast notifications
+- Responsive design with dark theme

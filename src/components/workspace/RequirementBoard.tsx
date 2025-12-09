@@ -120,9 +120,7 @@ export function RequirementBoard({
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className={`glass-card rounded-xl overflow-hidden ${
-          requirement.is_additional_scope ? 'scope-creep-indicator' : ''
-        }`}
+        className="glass-card rounded-xl overflow-hidden"
       >
         {/* Header */}
         <div className="px-6 py-4 flex items-center justify-between hover:bg-muted/30 transition-colors">

@@ -87,7 +87,7 @@ export function TaskCard({ task, isDragging, isAdditionalScope, onDelete, onUpda
       whileHover={{ scale: 1.02 }}
       className={`group glass-card rounded-lg p-3 cursor-grab active:cursor-grabbing transition-all duration-200 ${
         isDragging ? 'shadow-lg ring-2 ring-primary/50' : ''
-      } ${isAdditionalScope ? 'border-l-2 border-l-warning' : ''}`}
+      }`}
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => setShowActions(false)}
     >
