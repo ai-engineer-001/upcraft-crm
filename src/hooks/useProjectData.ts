@@ -1,12 +1,13 @@
 import { useState, useCallback, useMemo } from 'react';
-import { mockClients, mockProjects, mockRequirements, mockSubtasks } from '@/data/mockData';
-import { Client, Project, Requirement, Subtask, ClientWithProject, ProjectWithProgress, RequirementWithTasks, TaskStatus } from '@/types/project';
+import { mockClients, mockProjects, mockRequirements, mockSubtasks, mockDocuments } from '@/data/mockData';
+import { Client, Project, Requirement, Subtask, Document, ClientWithProject, ProjectWithProgress, RequirementWithTasks, TaskStatus } from '@/types/project';
 
 export function useProjectData() {
-  const [clients] = useState<Client[]>(mockClients);
+  const [clients, setClients] = useState<Client[]>(mockClients);
   const [projects] = useState<Project[]>(mockProjects);
-  const [requirements] = useState<Requirement[]>(mockRequirements);
+  const [requirements, setRequirements] = useState<Requirement[]>(mockRequirements);
   const [subtasks, setSubtasks] = useState<Subtask[]>(mockSubtasks);
+  const [documents, setDocuments] = useState<Document[]>(mockDocuments);
 
   const calculateProgress = useCallback((tasks: Subtask[]): number => {
     if (tasks.length === 0) return 0;
@@ -38,9 +39,11 @@ export function useProjectData() {
           .filter(p => p.client_id === client.id)
           .map(getProjectWithProgress);
         
-        return { ...client, projects: clientProjects };
+        const clientDocs = documents.filter(d => d.client_id === client.id);
+        
+        return { ...client, projects: clientProjects, documents: clientDocs };
       });
-  }, [clients, projects, getProjectWithProgress]);
+  }, [clients, projects, documents, getProjectWithProgress]);
 
   const getClientById = useCallback((clientId: string): ClientWithProject | undefined => {
     return clientsWithProjects.find(c => c.id === clientId);
@@ -67,10 +70,107 @@ export function useProjectData() {
     return newTask;
   }, []);
 
+  const deleteSubtask = useCallback((taskId: string) => {
+    setSubtasks(prev => prev.filter(t => t.id !== taskId));
+  }, []);
+
+  const updateSubtask = useCallback((taskId: string, updates: Partial<Subtask>) => {
+    setSubtasks(prev =>
+      prev.map(task =>
+        task.id === taskId ? { ...task, ...updates } : task
+      )
+    );
+  }, []);
+
+  const addRequirement = useCallback((projectId: string, title: string, description: string, isAdditionalScope: boolean) => {
+    const newReq: Requirement = {
+      id: `req-${Date.now()}`,
+      project_id: projectId,
+      title,
+      description,
+      is_additional_scope: isAdditionalScope,
+      created_at: new Date().toISOString().split('T')[0],
+    };
+    setRequirements(prev => [...prev, newReq]);
+    return newReq;
+  }, []);
+
+  const deleteRequirement = useCallback((requirementId: string) => {
+    setRequirements(prev => prev.filter(r => r.id !== requirementId));
+    setSubtasks(prev => prev.filter(t => t.requirement_id !== requirementId));
+  }, []);
+
+  const updateRequirement = useCallback((requirementId: string, updates: Partial<Requirement>) => {
+    setRequirements(prev =>
+      prev.map(req =>
+        req.id === requirementId ? { ...req, ...updates } : req
+      )
+    );
+  }, []);
+
+  const addDocument = useCallback((clientId: string, name: string, type: Document['type'], fileUrl: string) => {
+    const newDoc: Document = {
+      id: `doc-${Date.now()}`,
+      client_id: clientId,
+      name,
+      type,
+      file_url: fileUrl,
+      uploaded_at: new Date().toISOString().split('T')[0],
+    };
+    setDocuments(prev => [...prev, newDoc]);
+    
+    // If it's an agreement, update client agreement status
+    if (type === 'agreement') {
+      setClients(prev =>
+        prev.map(c =>
+          c.id === clientId ? { ...c, agreement_status: 'Signed', agreement_url: fileUrl } : c
+        )
+      );
+    }
+    
+    return newDoc;
+  }, []);
+
+  const deleteDocument = useCallback((docId: string) => {
+    const doc = documents.find(d => d.id === docId);
+    setDocuments(prev => prev.filter(d => d.id !== docId));
+    
+    // Check if there are any remaining agreements for this client
+    if (doc && doc.type === 'agreement') {
+      const remainingAgreements = documents.filter(d => 
+        d.client_id === doc.client_id && d.type === 'agreement' && d.id !== docId
+      );
+      if (remainingAgreements.length === 0) {
+        setClients(prev =>
+          prev.map(c =>
+            c.id === doc.client_id ? { ...c, agreement_status: 'Pending', agreement_url: undefined } : c
+          )
+        );
+      }
+    }
+  }, [documents]);
+
+  const getClientDocuments = useCallback((clientId: string) => {
+    return documents.filter(d => d.client_id === clientId);
+  }, [documents]);
+
+  const hasAgreementDocument = useCallback((clientId: string) => {
+    return documents.some(d => d.client_id === clientId && d.type === 'agreement');
+  }, [documents]);
+
   return {
     clientsWithProjects,
     getClientById,
     updateTaskStatus,
     addSubtask,
+    deleteSubtask,
+    updateSubtask,
+    addRequirement,
+    deleteRequirement,
+    updateRequirement,
+    addDocument,
+    deleteDocument,
+    getClientDocuments,
+    hasAgreementDocument,
   };
 }
