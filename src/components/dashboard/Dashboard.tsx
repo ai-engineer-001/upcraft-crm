@@ -1,14 +1,19 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { LayoutGrid, Users, FolderKanban, TrendingUp } from 'lucide-react';
+import { LayoutGrid, Users, FolderKanban, TrendingUp, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
 import { ClientWithProject } from '@/types/project';
 import { ClientCard } from './ClientCard';
+import { Button } from '@/components/ui/button';
 
 interface DashboardProps {
   clients: ClientWithProject[];
+  completedClients: ClientWithProject[];
   onClientClick: (clientId: string) => void;
 }
 
-export function Dashboard({ clients, onClientClick }: DashboardProps) {
+export function Dashboard({ clients, completedClients, onClientClick }: DashboardProps) {
+  const [showCompleted, setShowCompleted] = useState(false);
+
   const totalTasks = clients.reduce((acc, client) => {
     return acc + client.projects.reduce((pAcc, project) => {
       return pAcc + project.requirements.reduce((rAcc, req) => rAcc + req.subtasks.length, 0);
@@ -95,14 +100,14 @@ export function Dashboard({ clients, onClientClick }: DashboardProps) {
           </div>
         </motion.div>
 
-        {/* Section Header */}
+        {/* Active Clients Section */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-semibold text-foreground">Active Clients</h2>
           <span className="text-sm text-muted-foreground">{clients.length} clients</span>
         </div>
 
         {/* Client Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           {clients.map((client, index) => (
             <ClientCard
               key={client.id}
@@ -111,7 +116,61 @@ export function Dashboard({ clients, onClientClick }: DashboardProps) {
               index={index}
             />
           ))}
+          {clients.length === 0 && (
+            <div className="col-span-full glass-card rounded-xl p-8 text-center text-muted-foreground">
+              No active clients at the moment.
+            </div>
+          )}
         </div>
+
+        {/* Completed Clients Section */}
+        {completedClients.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+          >
+            <Button
+              variant="ghost"
+              className="w-full flex items-center justify-between mb-4 py-3 hover:bg-muted/50"
+              onClick={() => setShowCompleted(!showCompleted)}
+            >
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-success" />
+                <h2 className="text-lg font-semibold text-foreground">Completed Clients</h2>
+                <span className="text-sm text-muted-foreground">({completedClients.length})</span>
+              </div>
+              {showCompleted ? (
+                <ChevronUp className="w-5 h-5 text-muted-foreground" />
+              ) : (
+                <ChevronDown className="w-5 h-5 text-muted-foreground" />
+              )}
+            </Button>
+
+            {showCompleted && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+              >
+                {completedClients.map((client, index) => (
+                  <ClientCard
+                    key={client.id}
+                    client={client}
+                    onClick={() => onClientClick(client.id)}
+                    index={index}
+                    isCompleted
+                  />
+                ))}
+              </motion.div>
+            )}
+
+            <p className="text-xs text-muted-foreground mt-4 text-center">
+              Click on a completed client to view their history or add new work requests
+            </p>
+          </motion.div>
+        )}
       </main>
     </div>
   );

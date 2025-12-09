@@ -1,7 +1,15 @@
-export type ClientStatus = 'Active' | 'Archived';
+export type ClientStatus = 'Active' | 'Completed' | 'Archived';
 export type AgreementStatus = 'Pending' | 'Signed';
 export type ProjectStatus = 'Planning' | 'In Progress' | 'Completed';
 export type TaskStatus = 'To Do' | 'In Progress' | 'Review' | 'Done';
+export type Priority = 'Low' | 'Medium' | 'High' | 'Urgent';
+
+export const PRIORITY_ORDER: Record<Priority, number> = {
+  'Urgent': 0,
+  'High': 1,
+  'Medium': 2,
+  'Low': 3,
+};
 
 export interface Document {
   id: string;
@@ -27,6 +35,7 @@ export interface Project {
   client_id: string;
   name: string;
   status: ProjectStatus;
+  priority: Priority;
   start_date: string;
   deadline: string;
   created_at: string;
@@ -38,6 +47,7 @@ export interface Requirement {
   title: string;
   description: string;
   is_additional_scope: boolean;
+  priority: Priority;
   created_at: string;
 }
 
@@ -46,6 +56,7 @@ export interface Subtask {
   requirement_id: string;
   title: string;
   status: TaskStatus;
+  priority: Priority;
   assigned_to?: string;
   created_at: string;
 }

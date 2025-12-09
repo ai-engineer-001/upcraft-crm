@@ -3,14 +3,15 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Dashboard } from '@/components/dashboard/Dashboard';
 import { ClientWorkspace } from '@/components/workspace/ClientWorkspace';
 import { useProjectData } from '@/hooks/useProjectData';
-import { TaskStatus, Subtask, Document } from '@/types/project';
+import { TaskStatus, Subtask, Document, Priority, Requirement } from '@/types/project';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
 
 const Index = () => {
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const { 
-    clientsWithProjects, 
+    clientsWithProjects,
+    completedClients,
     getClientById, 
     updateTaskStatus, 
     addSubtask,
@@ -35,8 +36,8 @@ const Index = () => {
     }
   };
 
-  const handleAddTask = (requirementId: string, title: string, assignedTo?: string) => {
-    addSubtask(requirementId, title, assignedTo);
+  const handleAddTask = (requirementId: string, title: string, assignedTo?: string, priority?: Priority) => {
+    addSubtask(requirementId, title, assignedTo, priority);
     toast.success('Task added', {
       description: `"${title}" has been added to the backlog.`,
     });
@@ -52,8 +53,8 @@ const Index = () => {
     toast.success('Task updated');
   };
 
-  const handleAddRequirement = (projectId: string, title: string, description: string, isAdditionalScope: boolean) => {
-    addRequirement(projectId, title, description, isAdditionalScope);
+  const handleAddRequirement = (projectId: string, title: string, description: string, isAdditionalScope: boolean, priority?: Priority) => {
+    addRequirement(projectId, title, description, isAdditionalScope, priority);
     toast.success('New scope added', {
       description: `"${title}" has been added as ${isAdditionalScope ? 'additional scope' : 'core requirement'}.`,
     });
@@ -64,7 +65,7 @@ const Index = () => {
     toast.success('Requirement deleted');
   };
 
-  const handleUpdateRequirement = (requirementId: string, updates: { title: string; description: string }) => {
+  const handleUpdateRequirement = (requirementId: string, updates: Partial<Requirement>) => {
     updateRequirement(requirementId, updates);
     toast.success('Requirement updated');
   };
@@ -117,6 +118,7 @@ const Index = () => {
           >
             <Dashboard
               clients={clientsWithProjects}
+              completedClients={completedClients}
               onClientClick={setSelectedClientId}
             />
           </motion.div>
