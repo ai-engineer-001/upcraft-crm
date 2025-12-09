@@ -1,20 +1,68 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { GripVertical, User, Sparkles } from 'lucide-react';
+import { GripVertical, User, Sparkles, Trash2, Edit2, Check, X } from 'lucide-react';
 import { Subtask } from '@/types/project';
+import { Button } from '@/components/ui/button';
 
 interface TaskCardProps {
   task: Subtask;
   isDragging: boolean;
   isAdditionalScope: boolean;
+  onDelete?: (taskId: string) => void;
+  onUpdate?: (taskId: string, updates: Partial<Subtask>) => void;
 }
 
-export function TaskCard({ task, isDragging, isAdditionalScope }: TaskCardProps) {
+export function TaskCard({ task, isDragging, isAdditionalScope, onDelete, onUpdate }: TaskCardProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState(task.title);
+  const [showActions, setShowActions] = useState(false);
+
+  const handleSaveEdit = () => {
+    if (editTitle.trim() && onUpdate) {
+      onUpdate(task.id, { title: editTitle.trim() });
+    }
+    setIsEditing(false);
+  };
+
+  const handleCancelEdit = () => {
+    setEditTitle(task.title);
+    setIsEditing(false);
+  };
+
+  if (isEditing) {
+    return (
+      <div className="glass-card rounded-lg p-3 space-y-2">
+        <input
+          type="text"
+          value={editTitle}
+          onChange={(e) => setEditTitle(e.target.value)}
+          className="w-full bg-muted/50 border border-border rounded px-2 py-1 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+          autoFocus
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') handleSaveEdit();
+            if (e.key === 'Escape') handleCancelEdit();
+          }}
+        />
+        <div className="flex justify-end gap-1">
+          <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={handleCancelEdit}>
+            <X className="w-3 h-3" />
+          </Button>
+          <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-success" onClick={handleSaveEdit}>
+            <Check className="w-3 h-3" />
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <motion.div
       whileHover={{ scale: 1.02 }}
       className={`group glass-card rounded-lg p-3 cursor-grab active:cursor-grabbing transition-all duration-200 ${
         isDragging ? 'shadow-lg ring-2 ring-primary/50' : ''
       } ${isAdditionalScope ? 'border-l-2 border-l-warning' : ''}`}
+      onMouseEnter={() => setShowActions(true)}
+      onMouseLeave={() => setShowActions(false)}
     >
       <div className="flex items-start gap-2">
         <GripVertical className="w-4 h-4 text-muted-foreground/50 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -24,9 +72,41 @@ export function TaskCard({ task, isDragging, isAdditionalScope }: TaskCardProps)
             <p className="text-sm font-medium text-foreground leading-tight">
               {task.title}
             </p>
-            {isAdditionalScope && (
-              <Sparkles className="w-3.5 h-3.5 text-warning flex-shrink-0" />
-            )}
+            <div className="flex items-center gap-1">
+              {showActions && (onDelete || onUpdate) && (
+                <>
+                  {onUpdate && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsEditing(true);
+                      }}
+                    >
+                      <Edit2 className="w-3 h-3" />
+                    </Button>
+                  )}
+                  {onDelete && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-5 w-5 p-0 text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete(task.id);
+                      }}
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
+                  )}
+                </>
+              )}
+              {isAdditionalScope && (
+                <Sparkles className="w-3.5 h-3.5 text-warning flex-shrink-0" />
+              )}
+            </div>
           </div>
           
           {task.assigned_to && (

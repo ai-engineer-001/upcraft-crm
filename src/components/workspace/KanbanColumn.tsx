@@ -7,6 +7,8 @@ interface KanbanColumnProps {
   tasks: Subtask[];
   requirementTitle: string;
   isAdditionalScope: boolean;
+  onDeleteTask?: (taskId: string) => void;
+  onUpdateTask?: (taskId: string, updates: Partial<Subtask>) => void;
 }
 
 const statusConfig: Record<TaskStatus, { label: string; color: string; bgColor: string }> = {
@@ -16,7 +18,14 @@ const statusConfig: Record<TaskStatus, { label: string; color: string; bgColor: 
   'Done': { label: 'Done', color: 'text-success', bgColor: 'bg-success/10' },
 };
 
-export function KanbanColumn({ status, tasks, requirementTitle, isAdditionalScope }: KanbanColumnProps) {
+export function KanbanColumn({ 
+  status, 
+  tasks, 
+  requirementTitle, 
+  isAdditionalScope,
+  onDeleteTask,
+  onUpdateTask,
+}: KanbanColumnProps) {
   const config = statusConfig[status];
   const droppableId = `${requirementTitle}-${status}`;
 
@@ -55,6 +64,8 @@ export function KanbanColumn({ status, tasks, requirementTitle, isAdditionalScop
                       task={task}
                       isDragging={snapshot.isDragging}
                       isAdditionalScope={isAdditionalScope}
+                      onDelete={onDeleteTask}
+                      onUpdate={onUpdateTask}
                     />
                   </div>
                 )}
