@@ -3,6 +3,8 @@ import { Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Priority } from '@/types/project';
+import { PrioritySelect } from '@/components/ui/priority-select';
 import {
   Dialog,
   DialogContent,
@@ -14,20 +16,22 @@ import {
 interface AddScopeDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAdd: (title: string, description: string, isAdditionalScope: boolean) => void;
+  onAdd: (title: string, description: string, isAdditionalScope: boolean, priority: Priority) => void;
 }
 
 export function AddScopeDialog({ open, onOpenChange, onAdd }: AddScopeDialogProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [isAdditionalScope, setIsAdditionalScope] = useState(false);
+  const [priority, setPriority] = useState<Priority>('Medium');
 
   const handleSubmit = () => {
     if (title.trim() && description.trim()) {
-      onAdd(title.trim(), description.trim(), isAdditionalScope);
+      onAdd(title.trim(), description.trim(), isAdditionalScope, priority);
       setTitle('');
       setDescription('');
       setIsAdditionalScope(false);
+      setPriority('Medium');
       onOpenChange(false);
     }
   };
@@ -63,6 +67,10 @@ export function AddScopeDialog({ open, onOpenChange, onAdd }: AddScopeDialogProp
               rows={3}
               className="w-full bg-muted/50 border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
             />
+          </div>
+          <div className="flex items-center justify-between">
+            <Label className="text-sm font-medium text-foreground">Priority</Label>
+            <PrioritySelect value={priority} onChange={setPriority} size="md" />
           </div>
           <div className="flex items-center justify-between py-2">
             <div className="space-y-1">

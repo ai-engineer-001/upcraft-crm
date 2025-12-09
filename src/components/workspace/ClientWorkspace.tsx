@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Building2, Calendar, AlertTriangle, FileCheck, Plus, Sparkles, FolderOpen, Upload } from 'lucide-react';
-import { ClientWithProject, TaskStatus, Subtask, Document } from '@/types/project';
+import { ArrowLeft, Building2, Calendar, AlertTriangle, FileCheck, Plus, FolderOpen, Upload } from 'lucide-react';
+import { ClientWithProject, TaskStatus, Subtask, Document, Priority, Requirement } from '@/types/project';
 import { RequirementBoard } from './RequirementBoard';
 import { DocumentManager } from './DocumentManager';
 import { AddScopeDialog } from './AddScopeDialog';
@@ -12,12 +12,12 @@ interface ClientWorkspaceProps {
   client: ClientWithProject;
   onBack: () => void;
   onTaskStatusChange: (taskId: string, newStatus: TaskStatus) => void;
-  onAddTask: (requirementId: string, title: string, assignedTo?: string) => void;
+  onAddTask: (requirementId: string, title: string, assignedTo?: string, priority?: Priority) => void;
   onDeleteTask?: (taskId: string) => void;
   onUpdateTask?: (taskId: string, updates: Partial<Subtask>) => void;
-  onAddRequirement?: (projectId: string, title: string, description: string, isAdditionalScope: boolean) => void;
+  onAddRequirement?: (projectId: string, title: string, description: string, isAdditionalScope: boolean, priority?: Priority) => void;
   onDeleteRequirement?: (requirementId: string) => void;
-  onUpdateRequirement?: (requirementId: string, updates: { title: string; description: string }) => void;
+  onUpdateRequirement?: (requirementId: string, updates: Partial<Requirement>) => void;
   onAddDocument?: (clientId: string, name: string, type: Document['type'], fileUrl: string) => void;
   onDeleteDocument?: (docId: string) => void;
 }
@@ -45,9 +45,9 @@ export function ClientWorkspace({
   const [docManagerOpen, setDocManagerOpen] = useState(false);
   const [addScopeOpen, setAddScopeOpen] = useState(false);
 
-  const handleAddScope = (title: string, description: string, isAdditionalScope: boolean) => {
+  const handleAddScope = (title: string, description: string, isAdditionalScope: boolean, priority: Priority) => {
     if (project && onAddRequirement) {
-      onAddRequirement(project.id, title, description, isAdditionalScope);
+      onAddRequirement(project.id, title, description, isAdditionalScope, priority);
     }
   };
 
