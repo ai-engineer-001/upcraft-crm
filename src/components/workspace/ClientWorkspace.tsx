@@ -1,7 +1,10 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Building2, Calendar, AlertTriangle, FileCheck, Plus, Sparkles } from 'lucide-react';
-import { ClientWithProject, TaskStatus } from '@/types/project';
+import { ArrowLeft, Building2, Calendar, AlertTriangle, FileCheck, Plus, Sparkles, FolderOpen, Upload } from 'lucide-react';
+import { ClientWithProject, TaskStatus, Subtask, Document } from '@/types/project';
 import { RequirementBoard } from './RequirementBoard';
+import { DocumentManager } from './DocumentManager';
+import { AddScopeDialog } from './AddScopeDialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
@@ -10,14 +13,47 @@ interface ClientWorkspaceProps {
   onBack: () => void;
   onTaskStatusChange: (taskId: string, newStatus: TaskStatus) => void;
   onAddTask: (requirementId: string, title: string) => void;
+  onDeleteTask?: (taskId: string) => void;
+  onUpdateTask?: (taskId: string, updates: Partial<Subtask>) => void;
+  onAddRequirement?: (projectId: string, title: string, description: string, isAdditionalScope: boolean) => void;
+  onDeleteRequirement?: (requirementId: string) => void;
+  onUpdateRequirement?: (requirementId: string, updates: { title: string; description: string }) => void;
+  onAddDocument?: (clientId: string, name: string, type: Document['type'], fileUrl: string) => void;
+  onDeleteDocument?: (docId: string) => void;
 }
 
-export function ClientWorkspace({ client, onBack, onTaskStatusChange, onAddTask }: ClientWorkspaceProps) {
+export function ClientWorkspace({ 
+  client, 
+  onBack, 
+  onTaskStatusChange, 
+  onAddTask,
+  onDeleteTask,
+  onUpdateTask,
+  onAddRequirement,
+  onDeleteRequirement,
+  onUpdateRequirement,
+  onAddDocument,
+  onDeleteDocument,
+}: ClientWorkspaceProps) {
   const project = client.projects[0];
-  const isPending = client.agreement_status === 'Pending';
+  const hasAgreement = client.documents?.some(d => d.type === 'agreement') ?? false;
+  const isPending = !hasAgreement;
   
   const coreRequirements = project?.requirements.filter(r => !r.is_additional_scope) || [];
   const additionalScope = project?.requirements.filter(r => r.is_additional_scope) || [];
+
+  const [docManagerOpen, setDocManagerOpen] = useState(false);
+  const [addScopeOpen, setAddScopeOpen] = useState(false);
+
+  const handleAddScope = (title: string, description: string) => {
+    if (project && onAddRequirement) {
+      onAddRequirement(project.id, title, description, true);
+    }
+  };
+
+  const handleUploadAgreement = () => {
+    setDocManagerOpen(true);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -33,7 +69,8 @@ export function ClientWorkspace({ client, onBack, onTaskStatusChange, onAddTask 
               <AlertTriangle className="w-4 h-4" />
               <span className="text-sm font-medium">Agreement Pending - Work at own risk</span>
             </div>
-            <Button variant="warning" size="sm">
+            <Button variant="warning" size="sm" onClick={handleUploadAgreement}>
+              <Upload className="w-4 h-4 mr-2" />
               Upload Agreement
             </Button>
           </div>
@@ -76,12 +113,21 @@ export function ClientWorkspace({ client, onBack, onTaskStatusChange, onAddTask 
                 </div>
               )}
               
-              <Badge variant={isPending ? 'destructive' : 'success'} className="gap-1">
+              <Button variant="ghost" onClick={() => setDocManagerOpen(true)} className="gap-2">
+                <FolderOpen className="w-4 h-4" />
+                Documents
+              </Button>
+              
+              <Badge 
+                variant={isPending ? 'destructive' : 'success'} 
+                className="gap-1 cursor-pointer"
+                onClick={() => setDocManagerOpen(true)}
+              >
                 <FileCheck className="w-3 h-3" />
-                {client.agreement_status}
+                {isPending ? 'Pending' : 'Signed'}
               </Badge>
 
-              <Button variant="glow" className="gap-2">
+              <Button variant="glow" className="gap-2" onClick={() => setAddScopeOpen(true)}>
                 <Plus className="w-4 h-4" />
                 Add New Scope
               </Button>
@@ -131,6 +177,10 @@ export function ClientWorkspace({ client, onBack, onTaskStatusChange, onAddTask 
                       requirement={req}
                       onTaskStatusChange={onTaskStatusChange}
                       onAddTask={onAddTask}
+                      onDeleteTask={onDeleteTask}
+                      onUpdateTask={onUpdateTask}
+                      onDeleteRequirement={onDeleteRequirement}
+                      onUpdateRequirement={onUpdateRequirement}
                     />
                   </motion.div>
                 ))}
@@ -159,6 +209,10 @@ export function ClientWorkspace({ client, onBack, onTaskStatusChange, onAddTask 
                         requirement={req}
                         onTaskStatusChange={onTaskStatusChange}
                         onAddTask={onAddTask}
+                        onDeleteTask={onDeleteTask}
+                        onUpdateTask={onUpdateTask}
+                        onDeleteRequirement={onDeleteRequirement}
+                        onUpdateRequirement={onUpdateRequirement}
                       />
                     </motion.div>
                   ))}
@@ -172,6 +226,26 @@ export function ClientWorkspace({ client, onBack, onTaskStatusChange, onAddTask 
           </div>
         )}
       </main>
+
+      {/* Document Manager Dialog */}
+      {onAddDocument && onDeleteDocument && (
+        <DocumentManager
+          open={docManagerOpen}
+          onOpenChange={setDocManagerOpen}
+          clientId={client.id}
+          clientName={client.name}
+          documents={client.documents || []}
+          onAddDocument={onAddDocument}
+          onDeleteDocument={onDeleteDocument}
+        />
+      )}
+
+      {/* Add Scope Dialog */}
+      <AddScopeDialog
+        open={addScopeOpen}
+        onOpenChange={setAddScopeOpen}
+        onAdd={handleAddScope}
+      />
     </div>
   );
 }

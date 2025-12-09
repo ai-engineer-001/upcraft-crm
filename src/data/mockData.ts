@@ -1,4 +1,4 @@
-import { Client, Project, Requirement, Subtask } from '@/types/project';
+import { Client, Project, Requirement, Subtask, Document } from '@/types/project';
 
 export const mockClients: Client[] = [
   {
@@ -184,4 +184,31 @@ export const mockSubtasks: Subtask[] = [
   // Blog subtasks (Scope Creep)
   { id: 'task-20', requirement_id: 'req-8', title: 'CMS integration', status: 'In Progress', assigned_to: 'Mike', created_at: '2024-03-26' },
   { id: 'task-21', requirement_id: 'req-8', title: 'SEO meta tags', status: 'To Do', assigned_to: 'Alex', created_at: '2024-03-26' },
+];
+
+export const mockDocuments: Document[] = [
+  {
+    id: 'doc-1',
+    client_id: 'client-1',
+    name: 'Master Service Agreement',
+    type: 'agreement',
+    file_url: '/agreements/techcorp.pdf',
+    uploaded_at: '2024-01-15',
+  },
+  {
+    id: 'doc-2',
+    client_id: 'client-1',
+    name: 'Project Proposal',
+    type: 'proposal',
+    file_url: '/proposals/techcorp-proposal.pdf',
+    uploaded_at: '2024-01-10',
+  },
+  {
+    id: 'doc-3',
+    client_id: 'client-3',
+    name: 'Service Agreement',
+    type: 'agreement',
+    file_url: '/agreements/enterprise.pdf',
+    uploaded_at: '2024-01-08',
+  },
 ];

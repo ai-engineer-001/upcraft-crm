@@ -3,6 +3,15 @@ export type AgreementStatus = 'Pending' | 'Signed';
 export type ProjectStatus = 'Planning' | 'In Progress' | 'Completed';
 export type TaskStatus = 'To Do' | 'In Progress' | 'Review' | 'Done';
 
+export interface Document {
+  id: string;
+  client_id: string;
+  name: string;
+  type: 'agreement' | 'contract' | 'proposal' | 'other';
+  file_url: string;
+  uploaded_at: string;
+}
+
 export interface Client {
   id: string;
   name: string;
@@ -43,6 +52,7 @@ export interface Subtask {
 
 export interface ClientWithProject extends Client {
   projects: ProjectWithProgress[];
+  documents: Document[];
 }
 
 export interface ProjectWithProgress extends Project {
