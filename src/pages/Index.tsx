@@ -35,8 +35,8 @@ const Index = () => {
     }
   };
 
-  const handleAddTask = (requirementId: string, title: string) => {
-    addSubtask(requirementId, title);
+  const handleAddTask = (requirementId: string, title: string, assignedTo?: string) => {
+    addSubtask(requirementId, title, assignedTo);
     toast.success('Task added', {
       description: `"${title}" has been added to the backlog.`,
     });

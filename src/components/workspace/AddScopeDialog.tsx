@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import {
   Dialog,
   DialogContent,
@@ -12,18 +14,20 @@ import {
 interface AddScopeDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAdd: (title: string, description: string) => void;
+  onAdd: (title: string, description: string, isAdditionalScope: boolean) => void;
 }
 
 export function AddScopeDialog({ open, onOpenChange, onAdd }: AddScopeDialogProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [isAdditionalScope, setIsAdditionalScope] = useState(false);
 
   const handleSubmit = () => {
     if (title.trim() && description.trim()) {
-      onAdd(title.trim(), description.trim());
+      onAdd(title.trim(), description.trim(), isAdditionalScope);
       setTitle('');
       setDescription('');
+      setIsAdditionalScope(false);
       onOpenChange(false);
     }
   };
@@ -33,7 +37,7 @@ export function AddScopeDialog({ open, onOpenChange, onAdd }: AddScopeDialogProp
       <DialogContent className="bg-card border-border">
         <DialogHeader>
           <DialogTitle className="text-foreground flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-warning" />
+            <Sparkles className="w-5 h-5 text-primary" />
             Add New Scope
           </DialogTitle>
         </DialogHeader>
@@ -60,10 +64,21 @@ export function AddScopeDialog({ open, onOpenChange, onAdd }: AddScopeDialogProp
               className="w-full bg-muted/50 border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
             />
           </div>
-          <p className="text-xs text-warning flex items-center gap-1">
-            <Sparkles className="w-3 h-3" />
-            This will be marked as additional scope (new request)
-          </p>
+          <div className="flex items-center justify-between py-2">
+            <div className="space-y-1">
+              <Label htmlFor="additional-scope" className="text-sm font-medium text-foreground">
+                Additional Scope (New Request)
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Mark as scope creep for billing tracking
+              </p>
+            </div>
+            <Switch
+              id="additional-scope"
+              checked={isAdditionalScope}
+              onCheckedChange={setIsAdditionalScope}
+            />
+          </div>
         </div>
 
         <DialogFooter>

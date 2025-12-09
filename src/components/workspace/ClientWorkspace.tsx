@@ -12,7 +12,7 @@ interface ClientWorkspaceProps {
   client: ClientWithProject;
   onBack: () => void;
   onTaskStatusChange: (taskId: string, newStatus: TaskStatus) => void;
-  onAddTask: (requirementId: string, title: string) => void;
+  onAddTask: (requirementId: string, title: string, assignedTo?: string) => void;
   onDeleteTask?: (taskId: string) => void;
   onUpdateTask?: (taskId: string, updates: Partial<Subtask>) => void;
   onAddRequirement?: (projectId: string, title: string, description: string, isAdditionalScope: boolean) => void;
@@ -39,15 +39,15 @@ export function ClientWorkspace({
   const hasAgreement = client.documents?.some(d => d.type === 'agreement') ?? false;
   const isPending = !hasAgreement;
   
-  const coreRequirements = project?.requirements.filter(r => !r.is_additional_scope) || [];
-  const additionalScope = project?.requirements.filter(r => r.is_additional_scope) || [];
+  // All requirements together - no separation
+  const allRequirements = project?.requirements || [];
 
   const [docManagerOpen, setDocManagerOpen] = useState(false);
   const [addScopeOpen, setAddScopeOpen] = useState(false);
 
-  const handleAddScope = (title: string, description: string) => {
+  const handleAddScope = (title: string, description: string, isAdditionalScope: boolean) => {
     if (project && onAddRequirement) {
-      onAddRequirement(project.id, title, description, true);
+      onAddRequirement(project.id, title, description, isAdditionalScope);
     }
   };
 
@@ -160,13 +160,13 @@ export function ClientWorkspace({
               </div>
             </motion.div>
 
-            {/* Core Requirements */}
+            {/* All Requirements */}
             <section>
               <h2 className="text-lg font-semibold text-foreground mb-4">
-                Core Requirements
+                Project Scopes
               </h2>
               <div className="space-y-4">
-                {coreRequirements.map((req, index) => (
+                {allRequirements.map((req, index) => (
                   <motion.div
                     key={req.id}
                     initial={{ opacity: 0, y: 20 }}
@@ -184,41 +184,13 @@ export function ClientWorkspace({
                     />
                   </motion.div>
                 ))}
+                {allRequirements.length === 0 && (
+                  <div className="glass-card rounded-xl p-8 text-center text-muted-foreground">
+                    <p>No scopes yet. Click "Add New Scope" to create one.</p>
+                  </div>
+                )}
               </div>
             </section>
-
-            {/* Additional Scope */}
-            {additionalScope.length > 0 && (
-              <section>
-                <div className="flex items-center gap-2 mb-4">
-                  <Sparkles className="w-5 h-5 text-warning" />
-                  <h2 className="text-lg font-semibold text-foreground">
-                    Additional Scope
-                  </h2>
-                  <Badge variant="scope">{additionalScope.length} new</Badge>
-                </div>
-                <div className="space-y-4">
-                  {additionalScope.map((req, index) => (
-                    <motion.div
-                      key={req.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                    >
-                      <RequirementBoard
-                        requirement={req}
-                        onTaskStatusChange={onTaskStatusChange}
-                        onAddTask={onAddTask}
-                        onDeleteTask={onDeleteTask}
-                        onUpdateTask={onUpdateTask}
-                        onDeleteRequirement={onDeleteRequirement}
-                        onUpdateRequirement={onUpdateRequirement}
-                      />
-                    </motion.div>
-                  ))}
-                </div>
-              </section>
-            )}
           </div>
         ) : (
           <div className="flex items-center justify-center h-64 text-muted-foreground">
