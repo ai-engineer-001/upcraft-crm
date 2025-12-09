@@ -125,7 +125,7 @@
   }
 
   .scope-creep-indicator {
-    @apply border-l-4 border-warning bg-warning/5;
+    @apply border-l-4 border-primary/50;
   }
 
   .progress-bar {
