@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Upload, Trash2, Eye, X, Plus, FolderOpen, File } from 'lucide-react';
+import { FileText, Upload, Trash2, Eye, X, Plus, FolderOpen, File, Download } from 'lucide-react';
 import { Document } from '@/types/project';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -280,6 +280,23 @@ export function DocumentManager({
 }
 
 function DocumentRow({ doc, onDelete }: { doc: Document; onDelete: () => void }) {
+  const handleView = () => {
+    // Open in new tab for viewing
+    if (doc.file_url) {
+      window.open(doc.file_url, '_blank');
+    }
+  };
+
+  const handleDownload = () => {
+    // Create download link
+    const link = document.createElement('a');
+    link.href = doc.file_url;
+    link.download = doc.name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, x: -10 }}
@@ -297,14 +314,30 @@ function DocumentRow({ doc, onDelete }: { doc: Document; onDelete: () => void })
         <Badge variant={documentTypeColors[doc.type] as any}>
           {documentTypeLabels[doc.type]}
         </Badge>
-        <Button variant="ghost" size="icon" className="h-8 w-8">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="h-8 w-8"
+          onClick={handleView}
+          title="View document"
+        >
           <Eye className="w-4 h-4" />
+        </Button>
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="h-8 w-8 text-primary hover:text-primary"
+          onClick={handleDownload}
+          title="Download document"
+        >
+          <Download className="w-4 h-4" />
         </Button>
         <Button 
           variant="ghost" 
           size="icon" 
           className="h-8 w-8 text-destructive hover:text-destructive"
           onClick={onDelete}
+          title="Delete document"
         >
           <Trash2 className="w-4 h-4" />
         </Button>

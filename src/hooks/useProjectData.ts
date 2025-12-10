@@ -158,6 +158,65 @@ export function useProjectData() {
     );
   }, []);
 
+  const addClient = useCallback((name: string, email: string, projectName: string, projectPriority: Priority) => {
+    const clientId = `client-${Date.now()}`;
+    const projectId = `project-${Date.now()}`;
+    
+    const newClient: Client = {
+      id: clientId,
+      name,
+      email,
+      status: 'Active',
+      agreement_status: 'Pending',
+      created_at: new Date().toISOString().split('T')[0],
+    };
+    
+    const newProject: Project = {
+      id: projectId,
+      client_id: clientId,
+      name: projectName,
+      status: 'Planning',
+      priority: projectPriority,
+      start_date: new Date().toISOString().split('T')[0],
+      deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      created_at: new Date().toISOString().split('T')[0],
+    };
+    
+    setClients(prev => [...prev, newClient]);
+    setProjects(prev => [...prev, newProject]);
+    
+    return { client: newClient, project: newProject };
+  }, []);
+
+  const checkAndUpdateClientStatus = useCallback((clientId: string) => {
+    const clientProjects = projects.filter(p => p.client_id === clientId);
+    const projectIds = clientProjects.map(p => p.id);
+    const clientReqs = requirements.filter(r => projectIds.includes(r.project_id));
+    const reqIds = clientReqs.map(r => r.id);
+    const clientTasks = subtasks.filter(t => reqIds.includes(t.requirement_id));
+    
+    const client = clients.find(c => c.id === clientId);
+    if (!client) return;
+    
+    // If no tasks, keep current status
+    if (clientTasks.length === 0) return;
+    
+    const allTasksDone = clientTasks.every(t => t.status === 'Done');
+    const hasIncompleteTasks = clientTasks.some(t => t.status !== 'Done');
+    
+    if (allTasksDone && client.status === 'Active') {
+      // All tasks done, move to completed
+      setClients(prev => 
+        prev.map(c => c.id === clientId ? { ...c, status: 'Completed' } : c)
+      );
+    } else if (hasIncompleteTasks && client.status === 'Completed') {
+      // Has incomplete tasks (new scope added), move back to active
+      setClients(prev => 
+        prev.map(c => c.id === clientId ? { ...c, status: 'Active' } : c)
+      );
+    }
+  }, [clients, projects, requirements, subtasks]);
+
   const addDocument = useCallback((clientId: string, name: string, type: Document['type'], fileUrl: string) => {
     const newDoc: Document = {
       id: `doc-${Date.now()}`,
@@ -220,6 +279,8 @@ export function useProjectData() {
     updateRequirement,
     updateProjectPriority,
     updateClientStatus,
+    addClient,
+    checkAndUpdateClientStatus,
     addDocument,
     deleteDocument,
     getClientDocuments,

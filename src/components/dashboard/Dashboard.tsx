@@ -1,18 +1,75 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { LayoutGrid, Users, FolderKanban, TrendingUp, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
-import { ClientWithProject } from '@/types/project';
+import { 
+  LayoutGrid, Users, FolderKanban, TrendingUp, CheckCircle2, 
+  ChevronDown, ChevronUp, Search, Filter, Plus, Megaphone, FileWarning 
+} from 'lucide-react';
+import { ClientWithProject, Priority } from '@/types/project';
 import { ClientCard } from './ClientCard';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { AddClientDialog } from './AddClientDialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface DashboardProps {
   clients: ClientWithProject[];
   completedClients: ClientWithProject[];
   onClientClick: (clientId: string) => void;
+  onAddClient: (name: string, email: string, projectName: string, projectPriority: Priority) => void;
+  onOutreachClick: () => void;
 }
 
-export function Dashboard({ clients, completedClients, onClientClick }: DashboardProps) {
+export function Dashboard({ clients, completedClients, onClientClick, onAddClient, onOutreachClick }: DashboardProps) {
   const [showCompleted, setShowCompleted] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showNoAgreement, setShowNoAgreement] = useState(false);
+  const [addClientOpen, setAddClientOpen] = useState(false);
+
+  // Filter clients based on search and filters
+  const filteredClients = useMemo(() => {
+    let result = clients;
+    
+    // Search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(c => 
+        c.name.toLowerCase().includes(query) ||
+        c.email.toLowerCase().includes(query) ||
+        c.projects.some(p => p.name.toLowerCase().includes(query))
+      );
+    }
+    
+    // No agreement filter
+    if (showNoAgreement) {
+      result = result.filter(c => c.agreement_status === 'Pending');
+    }
+    
+    return result;
+  }, [clients, searchQuery, showNoAgreement]);
+
+  const filteredCompletedClients = useMemo(() => {
+    let result = completedClients;
+    
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(c => 
+        c.name.toLowerCase().includes(query) ||
+        c.email.toLowerCase().includes(query) ||
+        c.projects.some(p => p.name.toLowerCase().includes(query))
+      );
+    }
+    
+    if (showNoAgreement) {
+      result = result.filter(c => c.agreement_status === 'Pending');
+    }
+    
+    return result;
+  }, [completedClients, searchQuery, showNoAgreement]);
 
   const totalTasks = clients.reduce((acc, client) => {
     return acc + client.projects.reduce((pAcc, project) => {
@@ -41,14 +98,73 @@ export function Dashboard({ clients, completedClients, onClientClick }: Dashboar
       {/* Header */}
       <header className="border-b border-border/50 bg-background/80 backdrop-blur-xl sticky top-0 z-50">
         <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
-              <LayoutGrid className="w-5 h-5 text-primary-foreground" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
+                <LayoutGrid className="w-5 h-5 text-primary-foreground" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-foreground">Command Center</h1>
+                <p className="text-sm text-muted-foreground">Project Management Dashboard</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-xl font-bold text-foreground">Command Center</h1>
-              <p className="text-sm text-muted-foreground">Project Management Dashboard</p>
+            
+            {/* Header Actions */}
+            <div className="flex items-center gap-3">
+              {/* Search */}
+              <div className="relative hidden md:block">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search clients..."
+                  className="pl-10 w-64 bg-muted/50"
+                />
+              </div>
+
+              {/* Filter */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className={showNoAgreement ? 'border-warning text-warning' : ''}>
+                    <Filter className="w-4 h-4 mr-2" />
+                    Filter
+                    {showNoAgreement && <FileWarning className="w-3 h-3 ml-1" />}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuCheckboxItem
+                    checked={showNoAgreement}
+                    onCheckedChange={setShowNoAgreement}
+                  >
+                    <FileWarning className="w-4 h-4 mr-2 text-warning" />
+                    No Agreement Uploaded
+                  </DropdownMenuCheckboxItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* OutReach Tracker */}
+              <Button variant="outline" size="sm" onClick={onOutreachClick}>
+                <Megaphone className="w-4 h-4 mr-2" />
+                OutReach Tracker
+              </Button>
+
+              {/* Add Client */}
+              <Button size="sm" onClick={() => setAddClientOpen(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                New Client
+              </Button>
             </div>
+          </div>
+
+          {/* Mobile Search */}
+          <div className="relative mt-4 md:hidden">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search clients..."
+              className="pl-10 bg-muted/50"
+            />
           </div>
         </div>
       </header>
@@ -103,12 +219,12 @@ export function Dashboard({ clients, completedClients, onClientClick }: Dashboar
         {/* Active Clients Section */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-semibold text-foreground">Active Clients</h2>
-          <span className="text-sm text-muted-foreground">{clients.length} clients</span>
+          <span className="text-sm text-muted-foreground">{filteredClients.length} clients</span>
         </div>
 
         {/* Client Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {clients.map((client, index) => (
+          {filteredClients.map((client, index) => (
             <ClientCard
               key={client.id}
               client={client}
@@ -116,15 +232,15 @@ export function Dashboard({ clients, completedClients, onClientClick }: Dashboar
               index={index}
             />
           ))}
-          {clients.length === 0 && (
+          {filteredClients.length === 0 && (
             <div className="col-span-full glass-card rounded-xl p-8 text-center text-muted-foreground">
-              No active clients at the moment.
+              {searchQuery || showNoAgreement ? 'No clients match your filters.' : 'No active clients at the moment.'}
             </div>
           )}
         </div>
 
         {/* Completed Clients Section */}
-        {completedClients.length > 0 && (
+        {(completedClients.length > 0 || filteredCompletedClients.length > 0) && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -138,7 +254,7 @@ export function Dashboard({ clients, completedClients, onClientClick }: Dashboar
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-5 h-5 text-success" />
                 <h2 className="text-lg font-semibold text-foreground">Completed Clients</h2>
-                <span className="text-sm text-muted-foreground">({completedClients.length})</span>
+                <span className="text-sm text-muted-foreground">({filteredCompletedClients.length})</span>
               </div>
               {showCompleted ? (
                 <ChevronUp className="w-5 h-5 text-muted-foreground" />
@@ -154,7 +270,7 @@ export function Dashboard({ clients, completedClients, onClientClick }: Dashboar
                 exit={{ opacity: 0, height: 0 }}
                 className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
               >
-                {completedClients.map((client, index) => (
+                {filteredCompletedClients.map((client, index) => (
                   <ClientCard
                     key={client.id}
                     client={client}
@@ -172,6 +288,12 @@ export function Dashboard({ clients, completedClients, onClientClick }: Dashboar
           </motion.div>
         )}
       </main>
+
+      <AddClientDialog
+        open={addClientOpen}
+        onOpenChange={setAddClientOpen}
+        onAddClient={onAddClient}
+      />
     </div>
   );
 }
