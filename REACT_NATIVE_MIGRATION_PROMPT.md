@@ -2705,4 +2705,1268 @@ When all tasks in a project are marked as "Done":
 
 ---
 
-This prompt provides complete context for recreating the UpCraft CRM interface in React Native. The AI should follow the exact component structures, styling patterns, and functional behaviors described above.
+## 📝 MISSING CRITICAL COMPONENTS TO IMPLEMENT
+
+### 1. ConfirmDialog Component
+
+```tsx
+// components/workspace/ConfirmDialog.tsx
+import React from 'react';
+import { View, Text, Modal, StyleSheet, TouchableOpacity } from 'react-native';
+import { AlertTriangle } from 'lucide-react-native';
+import { Button } from '@/components/ui/Button';
+import { colors, typography, spacing, borderRadius, shadows } from '@/theme';
+
+interface ConfirmDialogProps {
+  visible: boolean;
+  onClose: () => void;
+  title: string;
+  description: string;
+  onConfirm: () => void;
+  confirmText?: string;
+  cancelText?: string;
+  variant?: 'destructive' | 'warning' | 'default';
+}
+
+export function ConfirmDialog({
+  visible,
+  onClose,
+  title,
+  description,
+  onConfirm,
+  confirmText = 'Delete',
+  cancelText = 'Cancel',
+  variant = 'destructive',
+}: ConfirmDialogProps) {
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose}>
+        <View style={styles.dialog} onStartShouldSetResponder={() => true}>
+          <View style={styles.iconContainer}>
+            <AlertTriangle size={24} color={variant === 'destructive' ? colors.destructive : colors.warning} />
+          </View>
+          <Text style={styles.title}>{title}</Text>
+          <Text style={styles.description}>{description}</Text>
+          <View style={styles.actions}>
+            <Button variant="ghost" onPress={onClose} style={styles.button}>
+              {cancelText}
+            </Button>
+            <Button 
+              variant={variant === 'destructive' ? 'destructive' : 'warning'} 
+              onPress={() => { onConfirm(); onClose(); }}
+              style={styles.button}
+            >
+              {confirmText}
+            </Button>
+          </View>
+        </View>
+      </TouchableOpacity>
+    </Modal>
+  );
+}
+
+const styles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.lg,
+  },
+  dialog: {
+    backgroundColor: colors.card,
+    borderRadius: borderRadius.xl,
+    padding: spacing['2xl'],
+    width: '100%',
+    maxWidth: 400,
+    alignItems: 'center',
+    ...shadows.lg,
+  },
+  iconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.destructiveBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.lg,
+  },
+  title: {
+    fontFamily: typography.fontFamily.semibold,
+    fontSize: typography.fontSize.lg,
+    color: colors.foreground,
+    marginBottom: spacing.sm,
+    textAlign: 'center',
+  },
+  description: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.sm,
+    color: colors.foregroundMuted,
+    textAlign: 'center',
+    marginBottom: spacing.xl,
+  },
+  actions: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    width: '100%',
+  },
+  button: {
+    flex: 1,
+  },
+});
+```
+
+### 2. PrioritySelect Component
+
+```tsx
+// components/ui/PrioritySelect.tsx
+import React, { useState } from 'react';
+import { View, Text, Modal, TouchableOpacity, StyleSheet, FlatList } from 'react-native';
+import { Flag, ChevronDown, Check } from 'lucide-react-native';
+import { Priority } from '@/types/project';
+import { colors, typography, spacing, borderRadius, shadows } from '@/theme';
+
+interface PrioritySelectProps {
+  value: Priority;
+  onChange: (priority: Priority) => void;
+  size?: 'sm' | 'md';
+}
+
+const priorityOptions: { value: Priority; color: string; bgColor: string }[] = [
+  { value: 'Urgent', color: '#EF4444', bgColor: 'rgba(239, 68, 68, 0.1)' },
+  { value: 'High', color: '#F97316', bgColor: 'rgba(249, 115, 22, 0.1)' },
+  { value: 'Medium', color: '#EAB308', bgColor: 'rgba(234, 179, 8, 0.1)' },
+  { value: 'Low', color: '#3B82F6', bgColor: 'rgba(59, 130, 246, 0.1)' },
+];
+
+export function PrioritySelect({ value, onChange, size = 'sm' }: PrioritySelectProps) {
+  const [visible, setVisible] = useState(false);
+  const currentOption = priorityOptions.find(o => o.value === value)!;
+  const iconSize = size === 'sm' ? 12 : 16;
+
+  return (
+    <>
+      <TouchableOpacity 
+        style={[styles.trigger, { backgroundColor: currentOption.bgColor }]}
+        onPress={() => setVisible(true)}
+      >
+        <Flag size={iconSize} color={currentOption.color} fill={currentOption.color} />
+        <ChevronDown size={12} color={currentOption.color} />
+      </TouchableOpacity>
+
+      <Modal visible={visible} transparent animationType="fade" onRequestClose={() => setVisible(false)}>
+        <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setVisible(false)}>
+          <View style={styles.dropdown}>
+            {priorityOptions.map(option => (
+              <TouchableOpacity
+                key={option.value}
+                style={[styles.option, value === option.value && styles.optionSelected]}
+                onPress={() => { onChange(option.value); setVisible(false); }}
+              >
+                <View style={[styles.optionIcon, { backgroundColor: option.bgColor }]}>
+                  <Flag size={14} color={option.color} fill={option.color} />
+                </View>
+                <Text style={[styles.optionText, { color: option.color }]}>{option.value}</Text>
+                {value === option.value && <Check size={16} color={colors.primary} />}
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    </>
+  );
+}
+
+const styles = StyleSheet.create({
+  trigger: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.md,
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dropdown: {
+    backgroundColor: colors.card,
+    borderRadius: borderRadius.lg,
+    padding: spacing.sm,
+    width: 200,
+    ...shadows.lg,
+  },
+  option: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+  },
+  optionSelected: {
+    backgroundColor: colors.backgroundAlt,
+  },
+  optionIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: borderRadius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  optionText: {
+    flex: 1,
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.sm,
+  },
+});
+```
+
+### 3. AddClientModal Component
+
+```tsx
+// components/dashboard/AddClientModal.tsx
+import React, { useState } from 'react';
+import { View, Text, Modal, TextInput, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
+import { UserPlus, X } from 'lucide-react-native';
+import { Button } from '@/components/ui/Button';
+import { PrioritySelect } from '@/components/ui/PrioritySelect';
+import { Priority } from '@/types/project';
+import { colors, typography, spacing, borderRadius, shadows } from '@/theme';
+
+interface AddClientModalProps {
+  visible: boolean;
+  onClose: () => void;
+  onAdd: (name: string, email: string, projectName: string, priority: Priority) => void;
+}
+
+export function AddClientModal({ visible, onClose, onAdd }: AddClientModalProps) {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [projectName, setProjectName] = useState('');
+  const [priority, setPriority] = useState<Priority>('Medium');
+
+  const handleSubmit = () => {
+    if (name.trim() && email.trim() && projectName.trim()) {
+      onAdd(name.trim(), email.trim(), projectName.trim(), priority);
+      resetForm();
+      onClose();
+    }
+  };
+
+  const resetForm = () => {
+    setName('');
+    setEmail('');
+    setProjectName('');
+    setPriority('Medium');
+  };
+
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <KeyboardAvoidingView 
+        style={styles.overlay} 
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <View style={styles.content}>
+          <View style={styles.header}>
+            <View style={styles.headerTitle}>
+              <UserPlus size={20} color={colors.primary} />
+              <Text style={styles.title}>Add New Client</Text>
+            </View>
+            <TouchableOpacity onPress={onClose}>
+              <X size={24} color={colors.foregroundMuted} />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.form}>
+            <View style={styles.field}>
+              <Text style={styles.label}>Client Name</Text>
+              <TextInput
+                style={styles.input}
+                value={name}
+                onChangeText={setName}
+                placeholder="e.g., TechCorp Industries"
+                placeholderTextColor={colors.foregroundMuted}
+              />
+            </View>
+
+            <View style={styles.field}>
+              <Text style={styles.label}>Email</Text>
+              <TextInput
+                style={styles.input}
+                value={email}
+                onChangeText={setEmail}
+                placeholder="contact@company.com"
+                placeholderTextColor={colors.foregroundMuted}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+            </View>
+
+            <View style={styles.field}>
+              <Text style={styles.label}>Project Name</Text>
+              <TextInput
+                style={styles.input}
+                value={projectName}
+                onChangeText={setProjectName}
+                placeholder="e.g., Mobile App Development"
+                placeholderTextColor={colors.foregroundMuted}
+              />
+            </View>
+
+            <View style={styles.fieldRow}>
+              <Text style={styles.label}>Priority</Text>
+              <PrioritySelect value={priority} onChange={setPriority} size="md" />
+            </View>
+          </View>
+
+          <View style={styles.footer}>
+            <Button variant="ghost" onPress={onClose} style={styles.footerButton}>
+              Cancel
+            </Button>
+            <Button 
+              variant="default" 
+              onPress={handleSubmit}
+              disabled={!name.trim() || !email.trim() || !projectName.trim()}
+              style={styles.footerButton}
+            >
+              Add Client
+            </Button>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+}
+
+const styles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  content: {
+    backgroundColor: colors.card,
+    borderTopLeftRadius: borderRadius.xl,
+    borderTopRightRadius: borderRadius.xl,
+    padding: spacing['2xl'],
+    ...shadows.lg,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.xl,
+  },
+  headerTitle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  title: {
+    fontFamily: typography.fontFamily.semibold,
+    fontSize: typography.fontSize.lg,
+    color: colors.foreground,
+  },
+  form: {
+    gap: spacing.lg,
+    marginBottom: spacing.xl,
+  },
+  field: {
+    gap: spacing.xs,
+  },
+  fieldRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  label: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.sm,
+    color: colors.foregroundMuted,
+  },
+  input: {
+    height: 48,
+    backgroundColor: colors.backgroundAlt,
+    borderRadius: borderRadius.lg,
+    paddingHorizontal: spacing.lg,
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.base,
+    color: colors.foreground,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  footer: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  footerButton: {
+    flex: 1,
+  },
+});
+```
+
+### 4. DocumentManager Component
+
+```tsx
+// components/workspace/DocumentManager.tsx
+import React, { useState } from 'react';
+import { View, Text, Modal, ScrollView, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import * as DocumentPicker from 'expo-document-picker';
+import { FolderOpen, FileText, Upload, Trash2, Eye, Download, X, Plus, File } from 'lucide-react-native';
+import { Document } from '@/types/project';
+import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
+import { GlassCard } from '@/components/ui/GlassCard';
+import { ConfirmDialog } from './ConfirmDialog';
+import { colors, typography, spacing, borderRadius, shadows } from '@/theme';
+
+interface DocumentManagerProps {
+  visible: boolean;
+  onClose: () => void;
+  clientId: string;
+  clientName: string;
+  documents: Document[];
+  onAddDocument: (clientId: string, name: string, type: Document['type'], fileUrl: string) => void;
+  onDeleteDocument: (docId: string) => void;
+}
+
+const documentTypeLabels: Record<Document['type'], string> = {
+  agreement: 'Agreement',
+  contract: 'Contract',
+  proposal: 'Proposal',
+  other: 'Other',
+};
+
+const documentTypeColors: Record<Document['type'], { bg: string; text: string }> = {
+  agreement: { bg: colors.successBg, text: colors.success },
+  contract: { bg: colors.infoBg, text: colors.info },
+  proposal: { bg: colors.warningBg, text: colors.warning },
+  other: { bg: colors.backgroundAlt, text: colors.foregroundMuted },
+};
+
+export function DocumentManager({
+  visible,
+  onClose,
+  clientId,
+  clientName,
+  documents,
+  onAddDocument,
+  onDeleteDocument,
+}: DocumentManagerProps) {
+  const [deleteDialogVisible, setDeleteDialogVisible] = useState(false);
+  const [docToDelete, setDocToDelete] = useState<string | null>(null);
+
+  const agreements = documents.filter(d => d.type === 'agreement');
+  const otherDocs = documents.filter(d => d.type !== 'agreement');
+
+  const handlePickDocument = async (type: Document['type']) => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['application/pdf', 'application/msword', 'text/plain'],
+        copyToCacheDirectory: true,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const file = result.assets[0];
+        onAddDocument(clientId, file.name.replace(/\.[^/.]+$/, ''), type, file.uri);
+      }
+    } catch (err) {
+      Alert.alert('Error', 'Failed to pick document');
+    }
+  };
+
+  const handleDeleteClick = (docId: string) => {
+    setDocToDelete(docId);
+    setDeleteDialogVisible(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (docToDelete) {
+      onDeleteDocument(docToDelete);
+      setDocToDelete(null);
+    }
+  };
+
+  const renderDocumentRow = (doc: Document) => {
+    const typeColor = documentTypeColors[doc.type];
+    return (
+      <View key={doc.id} style={styles.docRow}>
+        <View style={styles.docInfo}>
+          <FileText size={16} color={colors.foregroundMuted} />
+          <View style={styles.docDetails}>
+            <Text style={styles.docName}>{doc.name}</Text>
+            <Text style={styles.docDate}>Uploaded: {doc.uploaded_at}</Text>
+          </View>
+        </View>
+        <View style={styles.docActions}>
+          <View style={[styles.typeBadge, { backgroundColor: typeColor.bg }]}>
+            <Text style={[styles.typeBadgeText, { color: typeColor.text }]}>
+              {documentTypeLabels[doc.type]}
+            </Text>
+          </View>
+          <TouchableOpacity style={styles.iconButton}>
+            <Eye size={16} color={colors.foregroundMuted} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.iconButton}>
+            <Download size={16} color={colors.primary} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.iconButton} onPress={() => handleDeleteClick(doc.id)}>
+            <Trash2 size={16} color={colors.destructive} />
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
+
+  return (
+    <>
+      <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+        <View style={styles.overlay}>
+          <View style={styles.content}>
+            <View style={styles.header}>
+              <View style={styles.headerTitle}>
+                <FolderOpen size={20} color={colors.primary} />
+                <Text style={styles.title}>Documents - {clientName}</Text>
+              </View>
+              <TouchableOpacity onPress={onClose}>
+                <X size={24} color={colors.foregroundMuted} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
+              {/* Agreement Section */}
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <View style={styles.sectionTitle}>
+                    <FileText size={16} color={colors.success} />
+                    <Text style={styles.sectionLabel}>Agreement Documents</Text>
+                  </View>
+                  {agreements.length === 0 && (
+                    <Badge variant="destructive">No Agreement</Badge>
+                  )}
+                </View>
+                
+                {agreements.length === 0 ? (
+                  <View style={styles.warningBox}>
+                    <Text style={styles.warningText}>No agreement document uploaded</Text>
+                    <Text style={styles.warningSubtext}>Upload an agreement to mark as "Signed"</Text>
+                  </View>
+                ) : (
+                  <View style={styles.docList}>
+                    {agreements.map(renderDocumentRow)}
+                  </View>
+                )}
+              </View>
+
+              {/* Other Documents Section */}
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <View style={styles.sectionTitle}>
+                    <File size={16} color={colors.foregroundMuted} />
+                    <Text style={styles.sectionLabel}>Other Documents</Text>
+                  </View>
+                </View>
+                
+                {otherDocs.length === 0 ? (
+                  <Text style={styles.emptyText}>No other documents</Text>
+                ) : (
+                  <View style={styles.docList}>
+                    {otherDocs.map(renderDocumentRow)}
+                  </View>
+                )}
+              </View>
+            </ScrollView>
+
+            {/* Upload Buttons */}
+            <View style={styles.uploadSection}>
+              <Button variant="outline" onPress={() => handlePickDocument('agreement')} style={styles.uploadButton}>
+                <Upload size={16} color={colors.foreground} />
+                <Text style={styles.uploadButtonText}>Upload Agreement</Text>
+              </Button>
+              <Button variant="ghost" onPress={() => handlePickDocument('other')} style={styles.uploadButton}>
+                <Plus size={16} color={colors.foreground} />
+                <Text style={styles.uploadButtonText}>Add Document</Text>
+              </Button>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <ConfirmDialog
+        visible={deleteDialogVisible}
+        onClose={() => setDeleteDialogVisible(false)}
+        title="Delete Document"
+        description="Are you sure you want to delete this document? This action cannot be undone."
+        onConfirm={handleConfirmDelete}
+      />
+    </>
+  );
+}
+
+const styles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  content: {
+    backgroundColor: colors.card,
+    borderTopLeftRadius: borderRadius.xl,
+    borderTopRightRadius: borderRadius.xl,
+    maxHeight: '80%',
+    ...shadows.lg,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: spacing['2xl'],
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  headerTitle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  title: {
+    fontFamily: typography.fontFamily.semibold,
+    fontSize: typography.fontSize.lg,
+    color: colors.foreground,
+  },
+  scroll: {
+    padding: spacing['2xl'],
+  },
+  section: {
+    marginBottom: spacing.xl,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  sectionTitle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  sectionLabel: {
+    fontFamily: typography.fontFamily.semibold,
+    fontSize: typography.fontSize.sm,
+    color: colors.foreground,
+  },
+  docList: {
+    gap: spacing.sm,
+  },
+  docRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.backgroundAlt,
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+  },
+  docInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    flex: 1,
+  },
+  docDetails: {
+    flex: 1,
+  },
+  docName: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.sm,
+    color: colors.foreground,
+  },
+  docDate: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.xs,
+    color: colors.foregroundMuted,
+  },
+  docActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  typeBadge: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: borderRadius.full,
+  },
+  typeBadgeText: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: 10,
+  },
+  iconButton: {
+    padding: spacing.xs,
+  },
+  warningBox: {
+    backgroundColor: colors.warningBg,
+    borderWidth: 1,
+    borderColor: 'rgba(245, 158, 11, 0.3)',
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    alignItems: 'center',
+  },
+  warningText: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.sm,
+    color: colors.warning,
+  },
+  warningSubtext: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.xs,
+    color: colors.foregroundMuted,
+    marginTop: 2,
+  },
+  emptyText: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.sm,
+    color: colors.foregroundMuted,
+    textAlign: 'center',
+    paddingVertical: spacing.lg,
+  },
+  uploadSection: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    padding: spacing['2xl'],
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  uploadButton: {
+    flex: 1,
+  },
+  uploadButtonText: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.sm,
+    color: colors.foreground,
+  },
+});
+```
+
+### 5. AddScopeModal Component
+
+```tsx
+// components/workspace/AddScopeModal.tsx
+import React, { useState } from 'react';
+import { View, Text, Modal, TextInput, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, Switch } from 'react-native';
+import { Sparkles, X } from 'lucide-react-native';
+import { Button } from '@/components/ui/Button';
+import { PrioritySelect } from '@/components/ui/PrioritySelect';
+import { Priority } from '@/types/project';
+import { colors, typography, spacing, borderRadius, shadows } from '@/theme';
+
+interface AddScopeModalProps {
+  visible: boolean;
+  onClose: () => void;
+  onAdd: (title: string, description: string, isAdditionalScope: boolean, priority: Priority) => void;
+}
+
+export function AddScopeModal({ visible, onClose, onAdd }: AddScopeModalProps) {
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [isAdditionalScope, setIsAdditionalScope] = useState(false);
+  const [priority, setPriority] = useState<Priority>('Medium');
+
+  const handleSubmit = () => {
+    if (title.trim() && description.trim()) {
+      onAdd(title.trim(), description.trim(), isAdditionalScope, priority);
+      resetForm();
+      onClose();
+    }
+  };
+
+  const resetForm = () => {
+    setTitle('');
+    setDescription('');
+    setIsAdditionalScope(false);
+    setPriority('Medium');
+  };
+
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <KeyboardAvoidingView 
+        style={styles.overlay} 
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <View style={styles.content}>
+          <View style={styles.header}>
+            <View style={styles.headerTitle}>
+              <Sparkles size={20} color={colors.primary} />
+              <Text style={styles.title}>Add New Scope</Text>
+            </View>
+            <TouchableOpacity onPress={onClose}>
+              <X size={24} color={colors.foregroundMuted} />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.form}>
+            <View style={styles.field}>
+              <Text style={styles.label}>Title</Text>
+              <TextInput
+                style={styles.input}
+                value={title}
+                onChangeText={setTitle}
+                placeholder="e.g., Payment Gateway Integration"
+                placeholderTextColor={colors.foregroundMuted}
+              />
+            </View>
+
+            <View style={styles.field}>
+              <Text style={styles.label}>Description</Text>
+              <TextInput
+                style={[styles.input, styles.textArea]}
+                value={description}
+                onChangeText={setDescription}
+                placeholder="Describe the scope requirements..."
+                placeholderTextColor={colors.foregroundMuted}
+                multiline
+                numberOfLines={3}
+                textAlignVertical="top"
+              />
+            </View>
+
+            <View style={styles.fieldRow}>
+              <Text style={styles.label}>Priority</Text>
+              <PrioritySelect value={priority} onChange={setPriority} size="md" />
+            </View>
+
+            <View style={styles.switchRow}>
+              <View style={styles.switchLabel}>
+                <Text style={styles.label}>Additional Scope (New Request)</Text>
+                <Text style={styles.labelHint}>Mark as scope creep for billing tracking</Text>
+              </View>
+              <Switch
+                value={isAdditionalScope}
+                onValueChange={setIsAdditionalScope}
+                trackColor={{ false: colors.border, true: colors.primary }}
+                thumbColor="#FFFFFF"
+              />
+            </View>
+          </View>
+
+          <View style={styles.footer}>
+            <Button variant="ghost" onPress={onClose} style={styles.footerButton}>
+              Cancel
+            </Button>
+            <Button 
+              variant="default" 
+              onPress={handleSubmit}
+              disabled={!title.trim() || !description.trim()}
+              style={styles.footerButton}
+            >
+              Add Scope
+            </Button>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+}
+
+const styles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  content: {
+    backgroundColor: colors.card,
+    borderTopLeftRadius: borderRadius.xl,
+    borderTopRightRadius: borderRadius.xl,
+    padding: spacing['2xl'],
+    ...shadows.lg,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.xl,
+  },
+  headerTitle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  title: {
+    fontFamily: typography.fontFamily.semibold,
+    fontSize: typography.fontSize.lg,
+    color: colors.foreground,
+  },
+  form: {
+    gap: spacing.lg,
+    marginBottom: spacing.xl,
+  },
+  field: {
+    gap: spacing.xs,
+  },
+  fieldRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  switchRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+  },
+  switchLabel: {
+    flex: 1,
+  },
+  label: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.sm,
+    color: colors.foregroundMuted,
+  },
+  labelHint: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.xs,
+    color: colors.foregroundSubtle,
+    marginTop: 2,
+  },
+  input: {
+    height: 48,
+    backgroundColor: colors.backgroundAlt,
+    borderRadius: borderRadius.lg,
+    paddingHorizontal: spacing.lg,
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.base,
+    color: colors.foreground,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  textArea: {
+    height: 100,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.md,
+  },
+  footer: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  footerButton: {
+    flex: 1,
+  },
+});
+```
+
+### 6. Complete Mock Data
+
+```typescript
+// data/mockData.ts
+import { Client, Project, Requirement, Subtask, Document } from '@/types/project';
+
+export const mockClients: Client[] = [
+  {
+    id: 'client-1',
+    name: 'TechCorp Industries',
+    email: 'contact@techcorp.com',
+    status: 'Active',
+    agreement_status: 'Signed',
+    agreement_url: '/agreements/techcorp.pdf',
+    created_at: '2024-01-15',
+  },
+  {
+    id: 'client-2',
+    name: 'StartupXYZ',
+    email: 'hello@startupxyz.io',
+    status: 'Active',
+    agreement_status: 'Pending',
+    created_at: '2024-02-20',
+  },
+  {
+    id: 'client-3',
+    name: 'Enterprise Solutions Ltd',
+    email: 'projects@enterprise.com',
+    status: 'Active',
+    agreement_status: 'Signed',
+    agreement_url: '/agreements/enterprise.pdf',
+    created_at: '2024-01-08',
+  },
+  {
+    id: 'client-4',
+    name: 'Digital Agency Co',
+    email: 'team@digitalagency.com',
+    status: 'Active',
+    agreement_status: 'Signed',
+    created_at: '2024-03-01',
+  },
+  {
+    id: 'client-5',
+    name: 'Legacy Systems Inc',
+    email: 'support@legacysystems.com',
+    status: 'Completed',
+    agreement_status: 'Signed',
+    agreement_url: '/agreements/legacy.pdf',
+    created_at: '2023-06-15',
+  },
+  {
+    id: 'client-6',
+    name: 'CloudFirst Solutions',
+    email: 'info@cloudfirst.io',
+    status: 'Completed',
+    agreement_status: 'Signed',
+    agreement_url: '/agreements/cloudfirst.pdf',
+    created_at: '2023-08-20',
+  },
+];
+
+export const mockProjects: Project[] = [
+  {
+    id: 'project-1',
+    client_id: 'client-1',
+    name: 'E-Commerce Platform Rebuild',
+    status: 'In Progress',
+    priority: 'High',
+    start_date: '2024-01-20',
+    deadline: '2024-06-30',
+    created_at: '2024-01-20',
+  },
+  {
+    id: 'project-2',
+    client_id: 'client-2',
+    name: 'Mobile App MVP',
+    status: 'In Progress',
+    priority: 'Urgent',
+    start_date: '2024-02-25',
+    deadline: '2024-05-15',
+    created_at: '2024-02-25',
+  },
+  {
+    id: 'project-3',
+    client_id: 'client-3',
+    name: 'CRM Integration',
+    status: 'Planning',
+    priority: 'Medium',
+    start_date: '2024-04-01',
+    deadline: '2024-08-31',
+    created_at: '2024-03-15',
+  },
+  {
+    id: 'project-4',
+    client_id: 'client-4',
+    name: 'Website Redesign',
+    status: 'In Progress',
+    priority: 'Low',
+    start_date: '2024-03-10',
+    deadline: '2024-04-30',
+    created_at: '2024-03-10',
+  },
+  {
+    id: 'project-5',
+    client_id: 'client-5',
+    name: 'Database Migration',
+    status: 'Completed',
+    priority: 'Medium',
+    start_date: '2023-06-20',
+    deadline: '2023-09-30',
+    created_at: '2023-06-20',
+  },
+  {
+    id: 'project-6',
+    client_id: 'client-6',
+    name: 'Cloud Infrastructure Setup',
+    status: 'Completed',
+    priority: 'High',
+    start_date: '2023-08-25',
+    deadline: '2023-12-15',
+    created_at: '2023-08-25',
+  },
+];
+
+export const mockRequirements: Requirement[] = [
+  { id: 'req-1', project_id: 'project-1', title: 'User Authentication System', description: 'Complete auth flow with OAuth and 2FA support', is_additional_scope: false, priority: 'High', created_at: '2024-01-20' },
+  { id: 'req-2', project_id: 'project-1', title: 'Product Catalog', description: 'Searchable product catalog with filters', is_additional_scope: false, priority: 'Medium', created_at: '2024-01-20' },
+  { id: 'req-3', project_id: 'project-1', title: 'Payment Gateway Integration', description: 'Stripe and PayPal with subscriptions', is_additional_scope: true, priority: 'Urgent', created_at: '2024-03-05' },
+  { id: 'req-4', project_id: 'project-2', title: 'Onboarding Flow', description: 'User onboarding with tutorial screens', is_additional_scope: false, priority: 'High', created_at: '2024-02-25' },
+  { id: 'req-5', project_id: 'project-2', title: 'Push Notifications', description: 'Real-time push notification system', is_additional_scope: false, priority: 'Medium', created_at: '2024-02-25' },
+  { id: 'req-6', project_id: 'project-3', title: 'Data Migration', description: 'Migrate existing customer data to new CRM', is_additional_scope: false, priority: 'High', created_at: '2024-03-15' },
+  { id: 'req-7', project_id: 'project-4', title: 'Homepage Redesign', description: 'Modern homepage with animations', is_additional_scope: false, priority: 'Medium', created_at: '2024-03-10' },
+  { id: 'req-8', project_id: 'project-4', title: 'Blog Section', description: 'CMS-powered blog with SEO', is_additional_scope: true, priority: 'Low', created_at: '2024-03-25' },
+  { id: 'req-9', project_id: 'project-5', title: 'Data Export Module', description: 'Export in multiple formats', is_additional_scope: false, priority: 'High', created_at: '2023-06-20' },
+  { id: 'req-10', project_id: 'project-6', title: 'AWS Infrastructure', description: 'Setup cloud infrastructure', is_additional_scope: false, priority: 'High', created_at: '2023-08-25' },
+];
+
+export const mockSubtasks: Subtask[] = [
+  { id: 'task-1', requirement_id: 'req-1', title: 'Design login/signup screens', status: 'Done', priority: 'High', assigned_to: 'Alex', created_at: '2024-01-21' },
+  { id: 'task-2', requirement_id: 'req-1', title: 'Implement OAuth providers', status: 'Done', priority: 'High', assigned_to: 'Sarah', created_at: '2024-01-21' },
+  { id: 'task-3', requirement_id: 'req-1', title: 'Build 2FA module', status: 'In Progress', priority: 'Urgent', assigned_to: 'Mike', created_at: '2024-01-22' },
+  { id: 'task-4', requirement_id: 'req-1', title: 'Password recovery flow', status: 'To Do', priority: 'Medium', assigned_to: 'Alex', created_at: '2024-01-22' },
+  { id: 'task-5', requirement_id: 'req-2', title: 'Database schema design', status: 'Done', priority: 'High', assigned_to: 'Sarah', created_at: '2024-01-25' },
+  { id: 'task-6', requirement_id: 'req-2', title: 'Build search API', status: 'Review', priority: 'Medium', assigned_to: 'Mike', created_at: '2024-01-26' },
+  { id: 'task-7', requirement_id: 'req-2', title: 'Frontend filter components', status: 'In Progress', priority: 'Low', assigned_to: 'Alex', created_at: '2024-01-27' },
+  { id: 'task-8', requirement_id: 'req-3', title: 'Stripe SDK integration', status: 'In Progress', priority: 'Urgent', assigned_to: 'Sarah', created_at: '2024-03-06' },
+  { id: 'task-9', requirement_id: 'req-3', title: 'PayPal checkout flow', status: 'To Do', priority: 'High', assigned_to: 'Mike', created_at: '2024-03-06' },
+  { id: 'task-10', requirement_id: 'req-3', title: 'Subscription management', status: 'To Do', priority: 'Medium', created_at: '2024-03-07' },
+  { id: 'task-11', requirement_id: 'req-4', title: 'Design tutorial screens', status: 'Done', priority: 'High', assigned_to: 'Alex', created_at: '2024-02-26' },
+  { id: 'task-12', requirement_id: 'req-4', title: 'Implement swipe gestures', status: 'Review', priority: 'Medium', assigned_to: 'Sarah', created_at: '2024-02-27' },
+  { id: 'task-13', requirement_id: 'req-5', title: 'Firebase setup', status: 'In Progress', priority: 'High', assigned_to: 'Mike', created_at: '2024-03-01' },
+  { id: 'task-14', requirement_id: 'req-5', title: 'Notification handlers', status: 'To Do', priority: 'Medium', assigned_to: 'Alex', created_at: '2024-03-02' },
+  { id: 'task-15', requirement_id: 'req-6', title: 'Export scripts', status: 'To Do', priority: 'Urgent', assigned_to: 'Sarah', created_at: '2024-03-16' },
+  { id: 'task-16', requirement_id: 'req-6', title: 'Data validation', status: 'To Do', priority: 'High', created_at: '2024-03-16' },
+  { id: 'task-17', requirement_id: 'req-7', title: 'Hero section design', status: 'Done', priority: 'Medium', assigned_to: 'Alex', created_at: '2024-03-11' },
+  { id: 'task-18', requirement_id: 'req-7', title: 'Animations implementation', status: 'Done', priority: 'Low', assigned_to: 'Mike', created_at: '2024-03-12' },
+  { id: 'task-19', requirement_id: 'req-7', title: 'Responsive testing', status: 'Review', priority: 'Medium', assigned_to: 'Sarah', created_at: '2024-03-13' },
+  { id: 'task-20', requirement_id: 'req-8', title: 'CMS integration', status: 'In Progress', priority: 'Low', assigned_to: 'Mike', created_at: '2024-03-26' },
+  { id: 'task-21', requirement_id: 'req-8', title: 'SEO meta tags', status: 'To Do', priority: 'Low', assigned_to: 'Alex', created_at: '2024-03-26' },
+  { id: 'task-22', requirement_id: 'req-9', title: 'CSV export', status: 'Done', priority: 'High', assigned_to: 'Sarah', created_at: '2023-06-21' },
+  { id: 'task-23', requirement_id: 'req-9', title: 'JSON export', status: 'Done', priority: 'Medium', assigned_to: 'Mike', created_at: '2023-06-22' },
+  { id: 'task-24', requirement_id: 'req-10', title: 'EC2 setup', status: 'Done', priority: 'Urgent', assigned_to: 'Alex', created_at: '2023-08-26' },
+  { id: 'task-25', requirement_id: 'req-10', title: 'S3 buckets', status: 'Done', priority: 'High', assigned_to: 'Sarah', created_at: '2023-08-27' },
+];
+
+export const mockDocuments: Document[] = [
+  { id: 'doc-1', client_id: 'client-1', name: 'Master Service Agreement', type: 'agreement', file_url: '/agreements/techcorp.pdf', uploaded_at: '2024-01-15' },
+  { id: 'doc-2', client_id: 'client-1', name: 'Project Proposal', type: 'proposal', file_url: '/proposals/techcorp-proposal.pdf', uploaded_at: '2024-01-10' },
+  { id: 'doc-3', client_id: 'client-3', name: 'Service Agreement', type: 'agreement', file_url: '/agreements/enterprise.pdf', uploaded_at: '2024-01-08' },
+  { id: 'doc-4', client_id: 'client-5', name: 'Project Agreement', type: 'agreement', file_url: '/agreements/legacy.pdf', uploaded_at: '2023-06-15' },
+  { id: 'doc-5', client_id: 'client-6', name: 'Cloud Service Agreement', type: 'agreement', file_url: '/agreements/cloudfirst.pdf', uploaded_at: '2023-08-20' },
+];
+```
+
+### 7. Outreach Mock Data
+
+```typescript
+// data/outreachData.ts
+import { OutreachRecord } from '@/types/outreach';
+
+export const mockOutreachData: OutreachRecord[] = [
+  {
+    id: 'outreach-1',
+    status: 'Converted',
+    startupName: 'TechFlow AI',
+    founder: 'Marcus Chen',
+    contactLink: 'https://linkedin.com/in/marcuschen',
+    contactPlatform: 'LinkedIn',
+    techStack: 'React, Python, AWS',
+    problemType: 'Performance',
+    specificIssue: 'API response times over 3s, needs optimization',
+    auditLink: 'https://audit.example.com/techflow',
+    outreachDate: '2024-01-10',
+    nextAction: 'Contract signed - Onboarding scheduled',
+  },
+  {
+    id: 'outreach-2',
+    status: 'In-Talks',
+    startupName: 'FinanceHub',
+    founder: 'Sarah Williams',
+    contactLink: 'sarah@financehub.io',
+    contactPlatform: 'Email',
+    techStack: 'Next.js, Node.js, PostgreSQL',
+    problemType: 'Security',
+    specificIssue: 'Authentication vulnerabilities identified',
+    auditLink: 'https://audit.example.com/financehub',
+    outreachDate: '2024-02-15',
+    nextAction: 'Proposal review call on Friday',
+  },
+  {
+    id: 'outreach-3',
+    status: 'Replied',
+    startupName: 'GreenLogistics',
+    founder: 'James Rodriguez',
+    contactLink: 'https://twitter.com/jamesrodriguez',
+    contactPlatform: 'Twitter',
+    techStack: 'Vue.js, Django, MongoDB',
+    problemType: 'Scalability',
+    specificIssue: 'Database bottlenecks during peak hours',
+    auditLink: 'https://audit.example.com/greenlogistics',
+    outreachDate: '2024-02-20',
+    nextAction: 'Send detailed proposal',
+  },
+  {
+    id: 'outreach-4',
+    status: 'Contacted',
+    startupName: 'HealthTrack Pro',
+    founder: 'Emily Chen',
+    contactLink: 'https://linkedin.com/in/emilychen',
+    contactPlatform: 'LinkedIn',
+    techStack: 'React Native, Firebase',
+    problemType: 'UX/UI',
+    specificIssue: 'High user drop-off in onboarding',
+    auditLink: 'https://audit.example.com/healthtrack',
+    outreachDate: '2024-02-25',
+    nextAction: 'Follow-up in 3 days',
+  },
+  {
+    id: 'outreach-5',
+    status: 'Identified',
+    startupName: 'EduPlatform',
+    founder: 'Michael Brown',
+    contactLink: 'michael@eduplatform.com',
+    contactPlatform: 'Email',
+    techStack: 'Angular, .NET, SQL Server',
+    problemType: 'Performance',
+    specificIssue: 'Video streaming latency issues',
+    auditLink: 'https://audit.example.com/eduplatform',
+    outreachDate: '2024-03-01',
+    nextAction: 'Initial contact pending',
+  },
+  {
+    id: 'outreach-6',
+    status: 'Lost',
+    startupName: 'RetailMax',
+    founder: 'David Lee',
+    contactLink: 'https://linkedin.com/in/davidlee',
+    contactPlatform: 'LinkedIn',
+    techStack: 'Shopify, Node.js',
+    problemType: 'Integration',
+    specificIssue: 'Payment gateway issues',
+    auditLink: 'https://audit.example.com/retailmax',
+    outreachDate: '2024-01-05',
+    nextAction: 'Chose competitor - budget constraints',
+  },
+];
+```
+
+---
+
+## 🎯 FINAL IMPLEMENTATION CHECKLIST
+
+- [ ] Project setup with Expo + TypeScript
+- [ ] Install all dependencies (see Dependencies section)
+- [ ] Configure Manrope font family
+- [ ] Create theme system (colors, typography, spacing, shadows)
+- [ ] Implement all base UI components:
+  - [ ] GlassCard
+  - [ ] Button (all variants)
+  - [ ] Badge (all variants)
+  - [ ] PriorityBadge
+  - [ ] PrioritySelect
+  - [ ] ProgressBar
+  - [ ] SearchBar
+  - [ ] Input
+  - [ ] Switch
+- [ ] Implement Dashboard components:
+  - [ ] Dashboard (main screen)
+  - [ ] ClientCard
+  - [ ] StatsCard
+  - [ ] AddClientModal
+- [ ] Implement Workspace components:
+  - [ ] ClientWorkspace (main screen)
+  - [ ] RequirementBoard
+  - [ ] KanbanColumn
+  - [ ] TaskCard
+  - [ ] AddScopeModal
+  - [ ] DocumentManager
+  - [ ] ConfirmDialog
+- [ ] Implement Outreach components:
+  - [ ] OutreachTracker (main screen)
+  - [ ] OutreachCard
+  - [ ] AddLeadModal
+- [ ] Implement useProjectData hook with all CRUD operations
+- [ ] Set up Expo Router navigation
+- [ ] Test drag-and-drop for Kanban
+- [ ] Verify auto-completion status logic
+- [ ] Test on iOS and Android simulators
+- [ ] Performance optimization (memoization, lazy loading)
+
+---
+
+This prompt provides **complete context** for recreating the UpCraft CRM interface in React Native. The AI should follow the exact component structures, styling patterns, and functional behaviors described above. Every component matches the web version 1:1 with React Native equivalents.
